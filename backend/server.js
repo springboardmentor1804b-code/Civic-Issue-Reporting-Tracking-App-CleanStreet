@@ -7,11 +7,20 @@ dotenv.config();
 connectDB();
 
 const app = express();
-app.use(cors());
+
+// CORS configuration (optional: set allowed origins)
+app.use(cors({
+  origin: "*", // or ["http://localhost:3000"]
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+// Body parser
 app.use(express.json());
 
 // Routes
 app.use("/api/auth", require("./src/routes/authRoutes"));
+app.use("/api/profile", require("./src/routes/profileRoutes"));
 
 app.listen(process.env.PORT, () => {
   console.log(`🚀 Server running on port ${process.env.PORT}`);

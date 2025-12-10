@@ -5,11 +5,11 @@ const generateToken = require("../utils/generateToken");
 
 exports.signup = async (req, res) => {
   try {
-    const { username, email, password, confirmPassword, location, gender, role } = req.body;
+    const { username, email, password, location, gender, role } = req.body;
 
-    // Validate passwords match
-    if (password !== confirmPassword) {
-      return res.status(400).json({ message: "Passwords do not match" });
+    // Validate required fields
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: "Username, email, and password are required" });
     }
 
     // Check existing user
@@ -51,15 +51,15 @@ exports.signup = async (req, res) => {
 // ====================== LOGIN ======================
 exports.login = async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, password, username } = req.body;
 
-    // Find user
-    const user = await User.findOne({ username });
-    if (!user) return res.status(400).json({ message: "Invalid username or password" });
+    // Find user by email or username
+    const user = await User.findOne({ $or: [{ email }, { username }] });
+    if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
     // Check password
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid username or password" });
+    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
     res.status(200).json({
       message: "Login successful",

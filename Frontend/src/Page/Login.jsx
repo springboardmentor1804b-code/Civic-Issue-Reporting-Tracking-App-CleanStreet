@@ -1,45 +1,50 @@
-import React from "react";
+import React, { useState } from "react";
 import { FaUser, FaLock } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 export default function Login() {
-
   const navigate = useNavigate();
 
-  const [email, setEmail] = React.useState("");
-  const [password, setPassword] = React.useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    const savedUser = JSON.parse(localStorage.getItem("user"));
-
-    if (!savedUser) {
-      alert("No user found. Please register first.");
+    if (!email || !password) {
+      alert("Please enter both email and password");
       return;
     }
 
-    if (email !== savedUser.email) {
-      alert("Email not found");
-      return;
+    setLoading(true);
+
+    try {
+      // 🔥 AXIOS LOGIN API
+      const response = await axios.post("http://localhost:5000/api/auth/login", {
+        email,
+        password,
+      });
+
+      const user = response.data.user;
+
+      // Save session
+      localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("loggedInUser", JSON.stringify({ username: user.username }));
+      localStorage.setItem("user", JSON.stringify(user));
+
+      alert("Login Successful!");
+      navigate("/");
+
+    } catch (error) {
+      const message =
+        error.response?.data?.message || "Login failed. Invalid credentials.";
+
+      alert(message);
+    } finally {
+      setLoading(false);
     }
-
-    if (password !== savedUser.password) {
-      alert("Incorrect password");
-      return;
-    }
-
-    // Save login state and username
-    localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem(
-      "loggedInUser",
-      JSON.stringify({ username: savedUser.username })
-    );
-
-    alert("Login successful!");
-
-    // ✅ REACT ROUTER REDIRECTION (correct)
-    navigate("/");
   };
 
   return (
@@ -61,7 +66,7 @@ export default function Login() {
       {/* FORM */}
       <div className="flex flex-1 justify-center items-center px-4">
         <div className="bg-white w-full max-w-[400px] rounded-xl shadow-xl px-6 py-8 border border-black/10">
-          
+
           <h2 className="text-center text-2xl font-extrabold underline mb-6">Login</h2>
 
           <form onSubmit={handleLogin} className="space-y-6">
@@ -69,7 +74,7 @@ export default function Login() {
             {/* EMAIL */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-md font-semibold text-black">Email</label>
+                <label className="text-md font-semibold">Email</label>
                 <FaUser className="text-xl" />
               </div>
 
@@ -83,7 +88,7 @@ export default function Login() {
             {/* PASSWORD */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-md font-semibold text-black">Password</label>
+                <label className="text-md font-semibold">Password</label>
                 <FaLock className="text-xl" />
               </div>
 
@@ -102,15 +107,18 @@ export default function Login() {
             <div className="flex justify-center pt-2">
               <button
                 type="submit"
-                className="bg-[#d09347] text-white rounded-lg px-10 py-2 text-md font-semibold hover:bg-[#b98238] shadow-md"
+                disabled={loading}
+                className="bg-[#d09347] text-white rounded-lg px-10 py-2 text-md font-semibold 
+                           hover:bg-[#b98238] shadow-md disabled:opacity-50"
               >
-                Login
+                {loading ? "Logging in..." : "Login"}
               </button>
             </div>
 
           </form>
         </div>
       </div>
+
     </div>
   );
 }
