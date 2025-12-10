@@ -21,6 +21,7 @@ export default function Registration() {
 
     const { username, email, password, confirmPassword } = formData;
 
+    // Validation
     if (!username || !email || !password) {
       alert("All fields are required!");
       return;
@@ -41,10 +42,22 @@ export default function Registration() {
       return;
     }
 
+    // Save full user object
     localStorage.setItem("user", JSON.stringify(formData));
+
+    // --- NEW PART ---
+    // Save login state + username for profile display
+    localStorage.setItem("isLoggedIn", "true");
+    localStorage.setItem(
+      "loggedInUser",
+      JSON.stringify({ username: formData.username })
+    );
+    // --- END NEW PART ---
+
     alert("Registration Successful!");
 
-    window.location.href = "/login";
+    // Redirect directly to Profile
+    window.location.href = "/";
   };
 
   return (
