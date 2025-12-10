@@ -1,7 +1,10 @@
 import React from "react";
 import { FaUser, FaLock } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
+
+  const navigate = useNavigate();
 
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -26,10 +29,17 @@ export default function Login() {
       return;
     }
 
+    // Save login state and username
     localStorage.setItem("isLoggedIn", "true");
+    localStorage.setItem(
+      "loggedInUser",
+      JSON.stringify({ username: savedUser.username })
+    );
+
     alert("Login successful!");
 
-    window.location.href = "/dashboard";
+    // ✅ REACT ROUTER REDIRECTION (correct)
+    navigate("/");
   };
 
   return (

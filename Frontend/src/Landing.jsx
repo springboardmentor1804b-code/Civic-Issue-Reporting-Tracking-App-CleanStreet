@@ -2,11 +2,11 @@ import React from "react";
 import { Link } from "react-router-dom";
 
 export default function Landing() {
-  // Check login state from localStorage
+  // Read login state
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-  const user = JSON.parse(localStorage.getItem("user"));
+  const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
 
-  // Handle protected buttons
+  // Handle protected navigation
   const handleProtectedNav = (path) => {
     if (!isLoggedIn) {
       alert("Please login first!");
@@ -20,7 +20,7 @@ export default function Landing() {
 
       {/* NAVBAR */}
       <nav className="flex items-center justify-between px-6 py-4 bg-white shadow-sm sticky top-0 z-50">
-        
+
         {/* LOGO + TITLE */}
         <div className="flex items-center gap-3">
           <img src="/street-light-icon.svg" alt="logo" className="w-8 sm:w-10" />
@@ -40,7 +40,7 @@ export default function Landing() {
           </button>
         </div>
 
-        {/* AUTH SECTION – LOGIN/REGISTER OR PROFILE/LOGOUT */}
+        {/* AUTH SECTION */}
         <div className="flex gap-3">
           {!isLoggedIn ? (
             <>
@@ -60,14 +60,20 @@ export default function Landing() {
             </>
           ) : (
             <>
-              <span className="px-4 py-1 rounded-full bg-[#d09347] text-white font-semibold">
-                {user?.username}
-              </span>
+              {/* CLICKABLE USERNAME BUTTON */}
+              <button
+                onClick={() => (window.location.href = "/profile")}
+                className="px-4 py-1 rounded-full bg-[#d09347] text-white font-semibold"
+              >
+                {loggedInUser?.username}
+              </button>
 
+              {/* LOGOUT BUTTON */}
               <button
                 onClick={() => {
                   localStorage.removeItem("isLoggedIn");
-                  window.location.reload();
+                  localStorage.removeItem("loggedInUser");
+                  window.location.href = "/";
                 }}
                 className="px-4 py-1 rounded-full bg-black text-white font-semibold"
               >
@@ -87,10 +93,8 @@ export default function Landing() {
           backgroundPosition: "center",
         }}
       >
-        {/* DARK OVERLAY */}
         <div className="absolute inset-0 bg-black/40"></div>
 
-        {/* HERO CONTENT */}
         <div className="relative z-10 text-center px-4 max-w-3xl">
           <h1 className="text-4xl md:text-5xl font-bold leading-tight">
             Let’s Make Cities Cleaner and Smarter, Together
@@ -110,7 +114,6 @@ export default function Landing() {
           </button>
         </div>
 
-        {/* HERO IMAGE */}
         <img
           src="/hero.jpg"
           alt="Worker"
@@ -128,10 +131,8 @@ export default function Landing() {
           backgroundAttachment: "fixed",
         }}
       >
-
         {/* FEATURES */}
         <section className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 px-6 mb-16">
-          
           <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
             <svg className="w-12 h-12 text-[#d09347] mx-auto mb-4" fill="none" strokeWidth="2">
               <path d="M3 5h18M5 7v12a2 2 0 002 2h10a2 2 0 002-2V7" stroke="currentColor" />
@@ -155,18 +156,15 @@ export default function Landing() {
             <h3 className="text-xl font-semibold text-black">Community Impact</h3>
             <p className="text-gray-700 mt-2">Support issues that matter locally.</p>
           </div>
-
         </section>
 
         {/* HOW IT WORKS */}
         <section id="how-it-works" className="max-w-6xl mx-auto px-6 py-6">
-          
           <h2 className="text-3xl font-bold text-center mb-8 text-white drop-shadow-lg">
             How CleanStreet Works
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-
             <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
               <h3 className="text-lg font-semibold">1. Report</h3>
               <p className="text-gray-700">Submit issue with images</p>
@@ -186,7 +184,6 @@ export default function Landing() {
               <h3 className="text-lg font-semibold">4. Track</h3>
               <p className="text-gray-700">Track live progress</p>
             </div>
-
           </div>
         </section>
       </div>
