@@ -5,6 +5,7 @@ const generateToken = require("../utils/generateToken");
 
 exports.signup = async (req, res) => {
   try {
+
     const { username, email, password, location, gender, role } = req.body;
 
     // Validate required fields

@@ -58,14 +58,21 @@ export default function Login() {
     >
 
       {/* HEADER */}
-      <div className="flex items-center gap-4 px-6 py-3 bg-white shadow-sm">
-        <img src="/street-light-icon.svg" alt="logo" className="w-10 sm:w-12" />
-        <h1 className="text-2xl sm:text-3xl font-bold text-black">Clean Street</h1>
-      </div>
+      {/* HEADER */}
+<div className="flex justify-left px-6 py-4 bg-white shadow-sm">
+  <div className="flex flex-col items-center leading-none cursor-pointer hover:scale-105 transition">
+    <img src="/street-light-icon.svg" alt="logo" className="w-9" />
+    <span className="mt-1 text-[9px] font-medium tracking-widest uppercase">
+      Clean Street
+    </span>
+  </div>
+</div>
+
 
       {/* FORM */}
       <div className="flex flex-1 justify-center items-center px-4">
-        <div className="bg-white w-full max-w-[400px] rounded-xl shadow-xl px-6 py-8 border border-black/10">
+        <div className="bg-[#FAFAF8] w-full max-w-[400px] rounded-xl shadow-xl px-6 py-8 border border-black/10">
+
 
           <h2 className="text-center text-2xl font-extrabold underline mb-6">Login</h2>
 
@@ -106,11 +113,12 @@ export default function Login() {
 
             <div className="flex justify-center pt-2">
               <button
-                type="submit"
-                disabled={loading}
-                className="bg-[#d09347] text-white rounded-lg px-10 py-2 text-md font-semibold 
-                           hover:bg-[#b98238] shadow-md disabled:opacity-50"
-              >
+  type="submit"
+  disabled={loading}
+  className="bg-[#9B6A3A] text-white rounded-lg px-10 py-2 text-md font-semibold 
+             hover:brightness-95 shadow-md disabled:opacity-50"
+>
+
                 {loading ? "Logging in..." : "Login"}
               </button>
             </div>

@@ -2,11 +2,9 @@ import React from "react";
 import { Link } from "react-router-dom";
 
 export default function Landing() {
-  // Read login state
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
 
-  // Handle protected navigation
   const handleProtectedNav = (path) => {
     if (!isLoggedIn) {
       alert("Please login first!");
@@ -16,77 +14,80 @@ export default function Landing() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-white">
+    <div className="w-full min-h-screen scroll-smooth bg-gradient-to-b from-[#f6efe8] via-[#f4ede6] to-[#efe6dd] text-[#1f2937]">
 
       {/* NAVBAR */}
-      <nav className="flex items-center justify-between px-6 py-4 bg-white shadow-sm sticky top-0 z-50">
+      <nav className="sticky top-0 z-50 backdrop-blur-md bg-white/70 border-b border-black/5">
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
 
-        {/* LOGO + TITLE */}
-        <div className="flex items-center gap-3">
-          <img src="/street-light-icon.svg" alt="logo" className="w-8 sm:w-10" />
-          <h1 className="text-2xl font-bold">Clean Street</h1>
-        </div>
+          {/* LOGO */}
+          <div className="flex flex-col items-center leading-none cursor-pointer hover:scale-105 transition">
+            <img src="/street-light-icon.svg" alt="logo" className="w-9" />
+            <span className="mt-1 text-[9px] font-medium tracking-widest uppercase">
+              Clean Street
+            </span>
+          </div>
 
-        {/* NAVIGATION LINKS */}
-        <div className="hidden md:flex gap-6 text-[16px] font-medium">
-          <button onClick={() => handleProtectedNav("/dashboard")} className="hover:text-[#d09347]">
-            Dashboard
-          </button>
-          <button onClick={() => handleProtectedNav("/report")} className="hover:text-[#d09347]">
-            Report Issue
-          </button>
-          <button onClick={() => handleProtectedNav("/complaints")} className="hover:text-[#d09347]">
-            View Complaints
-          </button>
-        </div>
-
-        {/* AUTH SECTION */}
-        <div className="flex gap-3">
-          {!isLoggedIn ? (
-            <>
-              <Link
-                to="/login"
-                className="px-4 py-1 rounded-full bg-[#d09347] text-white font-semibold"
-              >
-                Login
-              </Link>
-
-              <Link
-                to="/register"
-                className="px-4 py-1 rounded-full bg-[#d09347] text-white font-semibold hover:bg-[#b98238] transition"
-              >
-                Register
-              </Link>
-            </>
-          ) : (
-            <>
-              {/* CLICKABLE USERNAME BUTTON */}
+          {/* LINKS */}
+          <div className="hidden md:flex gap-8 text-[15px] font-medium">
+            {["Dashboard", "Report Issue", "View Complaints"].map((label, i) => (
               <button
-                onClick={() => (window.location.href = "/profile")}
-                className="px-4 py-1 rounded-full bg-[#d09347] text-white font-semibold"
+                key={label}
+                onClick={() =>
+                  handleProtectedNav(
+                    i === 0 ? "/dashboard" : i === 1 ? "/report" : "/complaints"
+                  )
+                }
+                className="relative after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-0 after:bg-[#7b5a42] after:transition-all after:duration-300 hover:after:w-full hover:text-[#7b5a42]"
               >
-                {loggedInUser?.username}
+                {label}
               </button>
+            ))}
+          </div>
 
-              {/* LOGOUT BUTTON */}
-              <button
-                onClick={() => {
-                  localStorage.removeItem("isLoggedIn");
-                  localStorage.removeItem("loggedInUser");
-                  window.location.href = "/";
-                }}
-                className="px-4 py-1 rounded-full bg-black text-white font-semibold"
-              >
-                Logout
-              </button>
-            </>
-          )}
+          {/* AUTH */}
+          <div className="flex gap-3">
+            {!isLoggedIn ? (
+              <>
+                <Link
+                  to="/login"
+                  className="px-4 py-1.5 rounded-full border border-[#7b5a42]/40 text-[#7b5a42]
+                  hover:bg-[#7b5a42] hover:text-white hover:-translate-y-[1px]
+                  transition-all duration-300"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="px-4 py-1.5 rounded-full bg-[#7b5a42] text-white
+                  hover:scale-105 hover:shadow-lg transition-all duration-300"
+                >
+                  Register
+                </Link>
+              </>
+            ) : (
+              <>
+                <button className="px-4 py-1.5 rounded-full bg-[#7b5a42] text-white">
+                  {loggedInUser?.username}
+                </button>
+                <button
+                  onClick={() => {
+                    localStorage.clear();
+                    window.location.href = "/";
+                  }}
+                  className="px-4 py-1.5 rounded-full border hover:bg-black/5 transition"
+                >
+                  Logout
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </nav>
 
-      {/* HERO SECTION */}
+      {/* HERO */}
       <header
-        className="relative w-full h-[90vh] flex items-center justify-center text-white"
+        className="relative h-[88vh] flex items-center justify-center text-white overflow-hidden"
         style={{
           backgroundImage: "url(/Backgroundlanding.jpg)",
           backgroundSize: "cover",
@@ -95,20 +96,20 @@ export default function Landing() {
       >
         <div className="absolute inset-0 bg-black/40"></div>
 
-        <div className="relative z-10 text-center px-4 max-w-3xl">
-          <h1 className="text-4xl md:text-5xl font-bold leading-tight">
+        <div className="relative z-10 text-center max-w-3xl px-6 animate-[fadeUp_0.8s_ease-out]">
+          <h1 className="text-4xl md:text-5xl font-bold leading-tight drop-shadow-lg">
             Let’s Make Cities Cleaner and Smarter, Together
           </h1>
-
-          <p className="mt-3 text-lg">
-            Report civic issues, track progress, and help build a better community together.
+          <p className="mt-4 text-lg opacity-90">
+            Report civic issues, track progress, and build a better community through collective action.
           </p>
 
           <button
             onClick={() =>
               document.getElementById("how-it-works").scrollIntoView({ behavior: "smooth" })
             }
-            className="mt-6 bg-[#d09347] px-8 py-3 text-lg rounded-md font-semibold shadow-lg hover:bg-[#b98238] transition"
+            className="mt-7 px-8 py-3 rounded-lg bg-[#7b5a42] text-white font-semibold
+            shadow-xl hover:scale-110 hover:shadow-2xl transition-all duration-300"
           >
             How CleanStreet Works
           </button>
@@ -116,104 +117,116 @@ export default function Landing() {
 
         <img
           src="/hero.jpg"
-          alt="Worker"
-          className="absolute right-6 bottom-10 w-48 md:w-64 rounded-full border-4 border-white shadow-lg"
+          alt="Community cleanup"
+          className="hidden md:block absolute right-8 bottom-10 w-60 rounded-full
+          border-4 border-white shadow-2xl hover:scale-105 transition duration-500"
         />
       </header>
 
-      {/* BACKGROUND WITH FEATURES */}
-      <div
-        className="w-full py-20"
-        style={{
-          backgroundImage: "url(/Backgroundlanding.jpg)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundAttachment: "fixed",
-        }}
-      >
-        {/* FEATURES */}
-        <section className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 px-6 mb-16">
-          <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
-            <svg className="w-12 h-12 text-[#d09347] mx-auto mb-4" fill="none" strokeWidth="2">
-              <path d="M3 5h18M5 7v12a2 2 0 002 2h10a2 2 0 002-2V7" stroke="currentColor" />
-            </svg>
-            <h3 className="text-xl font-semibold text-black">Report Issues</h3>
-            <p className="text-gray-700 mt-2">Submit issues with photos and location details.</p>
-          </div>
-
-          <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
-            <svg className="w-12 h-12 text-green-600 mx-auto mb-4" fill="none" strokeWidth="2">
-              <path d="M3 3h7l2 3h9v13H3z" stroke="currentColor" />
-            </svg>
-            <h3 className="text-xl font-semibold text-black">Track Progress</h3>
-            <p className="text-gray-700 mt-2">Real-time updates as authorities respond.</p>
-          </div>
-
-          <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
-            <svg className="w-12 h-12 text-black mx-auto mb-4" fill="none" strokeWidth="2">
-              <path d="M16 11V7a4 4 0 10-8 0v4M5 11h14v10H5z" stroke="currentColor" />
-            </svg>
-            <h3 className="text-xl font-semibold text-black">Community Impact</h3>
-            <p className="text-gray-700 mt-2">Support issues that matter locally.</p>
-          </div>
-        </section>
-
-        {/* HOW IT WORKS */}
-        <section id="how-it-works" className="max-w-6xl mx-auto px-6 py-6">
-          <h2 className="text-3xl font-bold text-center mb-8 text-white drop-shadow-lg">
-            How CleanStreet Works
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
-              <h3 className="text-lg font-semibold">1. Report</h3>
-              <p className="text-gray-700">Submit issue with images</p>
+      {/* FEATURES */}
+      <section className="py-14">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8 px-6">
+          {[
+            ["Report Issues", "Submit civic problems with photos and precise location details."],
+            ["Track Progress", "Stay updated with transparent, real-time status changes."],
+            ["Community Impact", "Your reports directly contribute to cleaner neighborhoods."],
+          ].map(([title, desc]) => (
+            <div
+              key={title}
+              className="group backdrop-blur-xl bg-white/65 rounded-2xl p-8 text-center
+              shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300"
+            >
+              <h3 className="text-lg font-semibold group-hover:text-[#7b5a42] transition">
+                {title}
+              </h3>
+              <p className="mt-3 text-sm text-gray-700">
+                {desc}
+              </p>
             </div>
+          ))}
+        </div>
+      </section>
 
-            <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
-              <h3 className="text-lg font-semibold">2. Review</h3>
-              <p className="text-gray-700">Authorities verify the issue</p>
+      {/* HOW IT WORKS */}
+      <section id="how-it-works" className="py-14">
+        <h2 className="text-3xl font-bold text-center mb-8">
+          How CleanStreet Works
+        </h2>
+
+        <div className="max-w-7xl mx-auto grid sm:grid-cols-2 md:grid-cols-4 gap-6 px-6">
+          {[
+            ["Report", "Share the issue with images and details"],
+            ["Review", "Authorities verify and assess the problem"],
+            ["Resolve", "Assigned teams fix the issue"],
+            ["Track", "Follow progress until completion"],
+          ].map(([title, desc], i) => (
+            <div
+              key={title}
+              className="group backdrop-blur-xl bg-white/60 rounded-xl p-6 text-center
+              shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300"
+            >
+              <h3 className="font-semibold mb-2 group-hover:text-[#7b5a42] transition">
+                {i + 1}. {title}
+              </h3>
+              <p className="text-sm text-gray-700">
+                {desc}
+              </p>
             </div>
+          ))}
+        </div>
+      </section>
 
-            <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
-              <h3 className="text-lg font-semibold">3. Resolve</h3>
-              <p className="text-gray-700">Team fixes the issue</p>
-            </div>
-
-            <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
-              <h3 className="text-lg font-semibold">4. Track</h3>
-              <p className="text-gray-700">Track live progress</p>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* CTA SECTION */}
-      <section
-        className="py-20 text-white text-center"
-        style={{
-          backgroundImage: "url(/Backgroundlanding.jpg)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundAttachment: "fixed",
-        }}
-      >
-        <h2 className="text-3xl font-bold mb-4">Join the CleanStreet Community</h2>
-        <p className="max-w-xl mx-auto mb-6">Help us transform your city—one report at a time.</p>
+      {/* CTA */}
+      <section className="py-14 text-center">
+        <h2 className="text-3xl font-bold mb-3">
+          Join the CleanStreet Community
+        </h2>
+        <p className="max-w-2xl mx-auto text-lg text-gray-700 mb-6">
+          Be part of a growing civic movement that improves neighborhoods
+          through transparency, accountability, and collaboration.
+        </p>
 
         <Link
           to="/register"
-          className="bg-[#d09347] px-8 py-3 rounded-lg text-lg font-semibold text-white hover:bg-[#b98238] transition"
+          className="inline-block px-10 py-4 rounded-xl bg-[#7b5a42] text-white text-lg
+          font-semibold shadow-xl hover:scale-110 hover:shadow-2xl transition-all duration-300"
         >
           Get Started
         </Link>
       </section>
 
-      {/* FOOTER */}
-      <footer className="py-6 text-center bg-white border-t">
-        <p className="text-sm text-gray-600">© 2025 Clean Street | All Rights Reserved</p>
-      </footer>
+      {/* FOOTER (UNCHANGED) */}
+      <footer className="w-full bg-[#2c2622]/95 backdrop-blur-lg text-white py-16">
+        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div>
+            <h3 className="font-semibold text-lg mb-3">CleanStreet</h3>
+            <p className="text-sm text-white/70">
+              Helping communities report, track, and resolve civic issues efficiently.
+            </p>
+          </div>
 
+          <div>
+            <h4 className="font-semibold mb-3">Quick Links</h4>
+            <ul className="text-sm space-y-2 text-white/70">
+              <li>Dashboard</li>
+              <li>Report Issue</li>
+              <li>View Complaints</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold mb-3">Contact</h4>
+            <p className="text-sm text-white/70">
+              support@cleanstreet.com <br />
+              Building cleaner cities together.
+            </p>
+          </div>
+        </div>
+
+        <p className="text-center text-xs text-white/50 mt-12">
+          © 2025 Clean Street | All Rights Reserved
+        </p>
+      </footer>
     </div>
   );
 }
