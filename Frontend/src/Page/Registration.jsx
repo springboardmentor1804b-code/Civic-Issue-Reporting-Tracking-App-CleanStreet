@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Registration() {
   const [formData, setFormData] = useState({
@@ -12,203 +12,227 @@ export default function Registration() {
     role: "",
   });
 
-  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const fields = [
-    { label: "User Name", name: "username", required: true, placeholder: "John Doe" },
-    { label: "Email", name: "email", required: true, placeholder: "example@gmail.com" },
-    { label: "Password", name: "password", type: "password", required: true, placeholder: "Minimum 6 characters" },
-    { label: "Confirm Password", name: "confirmPassword", type: "password", required: true, placeholder: "Re-enter password" },
-    { label: "Location", name: "location", placeholder: "City, State" },
-    { label: "Gender", name: "gender" },
-    { label: "Role (User/Volunteer/Admin)", name: "role" },
-  ];
-
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const passwordStrength = () => {
+    const p = formData.password;
+    if (!p) return { label: "", width: "0%", color: "" };
+    if (p.length < 6) return { label: "Weak", width: "33%", color: "bg-red-500" };
+    if (/[A-Z]/.test(p) && /\d/.test(p))
+      return { label: "Strong", width: "100%", color: "bg-green-600" };
+    return { label: "Medium", width: "66%", color: "bg-yellow-500" };
   };
 
-  const validateForm = () => {
-    const { username, email, password, confirmPassword } = formData;
-    if (!username || !email || !password) return "All fields are required!";
-    if (!email.includes("@")) return "Enter a valid email!";
-    if (password.length < 6) return "Password must be at least 6 characters!";
-    if (password !== confirmPassword) return "Passwords do not match!";
-    return null;
-  };
+  const strength = passwordStrength();
 
-  const handleRegister = async (e) => {
+  const handleRegister = (e) => {
     e.preventDefault();
 
-    const errorMessage = validateForm();
-    if (errorMessage) {
-      alert(errorMessage);
+    const { username, email, password, confirmPassword, role } = formData;
+
+    if (!username || !email || !password || !confirmPassword || !role) {
+      alert("Please fill all required fields!");
       return;
     }
 
-    setLoading(true);
-
-    try {
-      const payload = {
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-        location: formData.location,
-        gender: formData.gender,
-        role: formData.role ? formData.role.toLowerCase() : "user",
-      };
-
-      await axios.post("http://localhost:5000/api/auth/register", payload);
-
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          username: formData.username,
-          email: formData.email,
-          role: payload.role,
-        })
-      );
-
-      localStorage.setItem("isLoggedIn", "true");
-      alert("Registration Successful!");
-      window.location.href = "/";
-    } catch (error) {
-      alert(
-        error.response?.data?.message ||
-          "Registration failed. Please try again."
-      );
-    } finally {
-      setLoading(false);
+    if (password !== confirmPassword) {
+      alert("Passwords do not match!");
+      return;
     }
+
+    localStorage.setItem("user", JSON.stringify(formData));
+    localStorage.setItem("isLoggedIn", "true");
+    localStorage.setItem(
+      "loggedInUser",
+      JSON.stringify({ username: formData.username })
+    );
+
+    alert("Registration Successful!");
+    window.location.href = "/";
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[0.36fr_0.64fr] h-screen w-full bg-white">
+    <div className="h-screen flex items-center justify-center bg-[#f6f3ee] px-4 overflow-hidden">
 
-      {/* LEFT PANEL */}
-      <div className="relative h-full bg-[#9B6A3A] overflow-hidden">
+      {/* MAIN CARD */}
+      <div className="w-full max-w-6xl h-[94vh] grid grid-cols-1 md:grid-cols-2 rounded-[44px] overflow-hidden shadow-2xl bg-white">
 
-        {/* LOGO */}
-        <div className="absolute top-4 left-4 z-20">
-          <div className="flex flex-col items-center">
+        {/* ================= LEFT PANEL ================= */}
+        <div className="bg-[#C2873B] flex flex-col h-full">
+
+          {/* TOP CONTENT */}
+          <div className="flex flex-col items-center text-center pt-8 pb-5 px-8">
             <img
               src="/street-light-icon.svg"
-              alt="CleanStreet Logo"
-              className="w-10 h-10"
+              alt="logo"
+              className="w-12 mb-2"
             />
-            <span
-              className="text-[10px] font-medium uppercase text-black"
-              style={{ letterSpacing: "0.08em" }}
-            >
-              Clean Street
-            </span>
+
+            <h1 className="text-3xl font-extrabold text-black mb-1">
+              Join CleanStreet
+            </h1>
+
+            <p className="text-black text-sm max-w-sm">
+              Be a part of making your city cleaner and smarter.
+            </p>
+          </div>
+
+          {/* IMAGE (FLUSH TO BOTTOM) */}
+          <div className="flex-1 w-full">
+            <img
+              src="/street.jpg"
+              alt="city"
+              className="w-full h-full object-cover"
+            />
           </div>
         </div>
 
-        {/* TEXT */}
-        <div className="absolute top-[90px] left-4 z-20 max-w-[340px]">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-black leading-tight">
-            Join CleanStreet
-          </h1>
-          <p className="text-sm sm:text-base font-medium text-black mt-1 whitespace-nowrap">
-  Be a part of making your city cleaner and smarter...
-</p>
+        {/* ================= RIGHT PANEL ================= */}
+        <div className="flex items-center justify-center px-7">
+          <div className="w-full max-w-md">
 
-        </div>
+            
 
-        {/* IMAGE */}
-        <div className="absolute left-0 right-0 bottom-0 top-[200px]">
-          <img
-            src="/street.jpg"
-            alt="Street"
-            className="w-full h-full object-cover"
-          />
-        </div>
-      </div>
+            <form onSubmit={handleRegister} className="space-y-2.5">
 
-      {/* RIGHT PANEL */}
-      <div className="flex flex-col justify-start h-full px-6 sm:px-10 py-6 bg-[#FAFAF8]">
+              {/* USERNAME */}
+              <Input label="Username" name="username" required onChange={handleChange} />
 
-        <div className="mx-auto w-full max-w-[420px]">
+              {/* EMAIL */}
+              <Input label="Email" name="email" required onChange={handleChange} />
 
-          <h2 className="text-center text-3xl font-extrabold text-black sm:text-4xl mb-4">
-            Sign Up
-          </h2>
-
-          <form onSubmit={handleRegister} className="space-y-3">
-            {fields.map(({ label, name, type, required, placeholder }) => (
-              <div key={name}>
-                <label className="block text-sm font-medium text-black">
-                  {label}
-                  {required && <span className="text-red-600 ml-1">*</span>}
+              {/* PASSWORD */}
+              <div>
+                <label className="text-sm font-semibold">
+                  Password <span className="text-red-500">*</span>
                 </label>
 
-                {name === "gender" ? (
-                  <select
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleChange}
-                    className="w-full border-0 border-b border-gray-400 bg-transparent
-                               px-0 py-1 text-sm font-medium text-black
-                               focus:border-black focus:outline-none"
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                ) : name === "role" ? (
-                  <select
-                    name={name}
-                    value={formData[name]}
-                    onChange={handleChange}
-                    className="w-full border-0 border-b border-gray-400 bg-transparent
-                               px-0 py-1 text-sm font-medium text-black
-                               focus:border-black focus:outline-none"
-                  >
-                    <option value="">Select Role</option>
-                    <option value="user">User</option>
-                    <option value="volunteer">Volunteer</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                ) : (
+                <div className="relative mt-1">
                   <input
-                    name={name}
-                    type={type || "text"}
-                    value={formData[name]}
+                    type={showPassword ? "text" : "password"}
+                    name="password"
                     onChange={handleChange}
-                    placeholder={placeholder}
-                    className="w-full border-0 border-b border-gray-400 bg-transparent
-                               px-0 py-1 text-sm font-medium text-black
-                               placeholder-gray-400
-                               focus:border-black focus:outline-none"
+                    className="w-full rounded-xl border px-4 py-2.5 text-sm
+                               focus:ring-2 focus:ring-[#C2873B]/40 outline-none"
                   />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-2.5 text-gray-600"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+
+                {strength.label && (
+                  <div className="mt-1">
+                    <div className="h-1 w-full bg-gray-200 rounded-full">
+                      <div
+                        className={`h-1 rounded-full ${strength.color}`}
+                        style={{ width: strength.width }}
+                      />
+                    </div>
+                    <p className="text-[11px] text-gray-600">
+                      Strength: <b>{strength.label}</b>
+                    </p>
+                  </div>
                 )}
               </div>
-            ))}
 
-            <a
-              href="/login"
-              className="text-sm font-semibold text-[#3F81EA] hover:underline"
-            >
-              Already have an account? Login
-            </a>
+              {/* CONFIRM PASSWORD */}
+              <Input
+                label="Confirm Password"
+                name="confirmPassword"
+                type="password"
+                required
+                onChange={handleChange}
+              />
 
-            <div className="flex justify-center pt-2">
+              {/* LOCATION */}
+              <Input label="Location" name="location" onChange={handleChange} />
+
+              {/* GENDER */}
+              <div>
+                <label className="text-sm font-semibold block mb-1">
+                  Gender
+                </label>
+                <div className="flex gap-4 text-sm">
+                  {["Male", "Female", "Other"].map((g) => (
+                    <label key={g} className="flex items-center gap-1">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value={g}
+                        onChange={handleChange}
+                        className="accent-[#C2873B]"
+                      />
+                      {g}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* ROLE */}
+              <div>
+                <label className="text-sm font-semibold">
+                  Role <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="role"
+                  onChange={handleChange}
+                  className="mt-1 w-full rounded-xl border px-4 py-2.5 text-sm
+                             focus:ring-2 focus:ring-[#C2873B]/40 outline-none"
+                >
+                  <option value="">Select role</option>
+                  <option>User</option>
+                  <option>Volunteer</option>
+                  <option>Admin</option>
+                </select>
+              </div>
+
+              {/* SUBMIT */}
               <button
                 type="submit"
-                disabled={loading}
-                className="w-[200px] rounded-full bg-[#9B6A3A] px-6 py-2.5
-                           text-base font-semibold text-white shadow-sm
-                           transition hover:brightness-95 disabled:opacity-60"
+                className="w-full bg-[#C2873B] text-white py-2.5 rounded-full
+                           font-semibold text-sm shadow-md hover:brightness-95 transition mt-2"
               >
-                {loading ? "Creating..." : "Create Account"}
+                Create Account
               </button>
-            </div>
-          </form>
 
+              <p className="text-center text-xs">
+                Already have an account?{" "}
+                <a href="/login" className="text-blue-600 font-semibold">
+                  Login
+                </a>
+              </p>
+
+            </form>
+          </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ================= INPUT COMPONENT ================= */
+function Input({ label, name, required, type = "text", onChange }) {
+  return (
+    <div>
+      <label className="text-sm font-semibold">
+        {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </label>
+      <input
+        type={type}
+        name={name}
+        onChange={onChange}
+        className="mt-1 w-full rounded-xl border px-4 py-2.5 text-sm
+                   focus:ring-2 focus:ring-[#C2873B]/40 outline-none"
+      />
     </div>
   );
 }
