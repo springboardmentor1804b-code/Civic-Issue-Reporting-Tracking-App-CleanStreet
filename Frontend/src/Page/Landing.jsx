@@ -37,56 +37,46 @@ const handleProtectedNav = (path) => {
         </div>
 
         {/* LINKS */}
-     <div className="hidden md:flex gap-6 font-medium">
+    <div className="hidden md:flex gap-6 font-medium">
 
-  <NavLink
-    to="/dashboard"
-    onClick={(e) => {
-      e.preventDefault();
-      handleProtectedNav("/dashboard");
-    }}
-    className={({ isActive }) =>
-      `hover:text-[#d09347] ${
-        isActive ? "text-[#d09347] font-semibold underline" : "text-black"
-      }`
-    }
-  >
-    Dashboard
-  </NavLink>
+  {[
+    { to: "/dashboard", label: "Dashboard" },
+    { to: "/report", label: "Report Issue" },
+    { to: "/view-complaints", label: "View Complaints" },
+  ].map((l) => (
+    <NavLink
+      key={l.to}
+      to={l.to}
+      onClick={(e) => {
+        if (!isLoggedIn) {
+          e.preventDefault();
+          handleProtectedNav(l.to);
+        }
+      }}
+      className={({ isActive }) =>
+        `relative group transition ${
+          isActive
+            ? "text-[#d09347] font-semibold"
+            : "text-black hover:text-[#d09347]"
+        }`
+      }
+    >
+      {({ isActive }) => (
+        <>
+          {l.label}
 
-  <NavLink
-    to="/report"
-    onClick={(e) => {
-      e.preventDefault();
-      handleProtectedNav("/report");
-    }}
-    className={({ isActive }) =>
-      `hover:text-[#d09347] ${
-        isActive ? "text-[#d09347] font-semibold underline" : "text-black"
-      }`
-    }
-  >
-    Report Issue
-  </NavLink>
-
-  <NavLink
-    to="/view-complaints"
-    onClick={(e) => {
-      e.preventDefault();
-      handleProtectedNav("/view-complaints");
-    }}
-    className={({ isActive }) =>
-      `hover:text-[#d09347] ${
-        isActive ? "text-[#d09347] font-semibold underline" : "text-black"
-      }`
-    }
-  >
-    View Complaints
-  </NavLink>
+          <span
+            className={`absolute left-0 -bottom-1 h-[2px] bg-[#d09347] transition-all duration-300 ${
+              isActive ? "w-full" : "w-0 group-hover:w-full"
+            }`}
+          ></span>
+        </>
+      )}
+    </NavLink>
+  ))}
 
 </div>
-
-        {/* AUTH */}
+      {/* AUTH */}
         <div className="flex gap-3">
           {!isLoggedIn ? (
             <>
