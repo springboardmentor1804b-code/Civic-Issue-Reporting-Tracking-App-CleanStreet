@@ -1,17 +1,22 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
+
 
 export default function Landing() {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
 
-  const handleProtectedNav = (path) => {
-    if (!isLoggedIn) {
-      alert("Please login first!");
-      return;
-    }
-    window.location.href = path;
-  };
+ const navigate = useNavigate();
+const location = useLocation();
+
+const handleProtectedNav = (path) => {
+  if (!isLoggedIn) {
+    alert("Please login first!");
+    return;
+  }
+  navigate(path);
+};
+
 
   return (
     <div className="w-full min-h-screen bg-white">
@@ -32,17 +37,54 @@ export default function Landing() {
         </div>
 
         {/* LINKS */}
-        <div className="hidden md:flex gap-6 font-medium">
-          <button onClick={() => handleProtectedNav("/dashboard")} className="hover:text-[#d09347]">
-            Dashboard
-          </button>
-          <button onClick={() => handleProtectedNav("/report")} className="hover:text-[#d09347]">
-            Report Issue
-          </button>
-          <button onClick={() => handleProtectedNav("/complaints")} className="hover:text-[#d09347]">
-            View Complaints
-          </button>
-        </div>
+     <div className="hidden md:flex gap-6 font-medium">
+
+  <NavLink
+    to="/dashboard"
+    onClick={(e) => {
+      e.preventDefault();
+      handleProtectedNav("/dashboard");
+    }}
+    className={({ isActive }) =>
+      `hover:text-[#d09347] ${
+        isActive ? "text-[#d09347] font-semibold underline" : "text-black"
+      }`
+    }
+  >
+    Dashboard
+  </NavLink>
+
+  <NavLink
+    to="/report"
+    onClick={(e) => {
+      e.preventDefault();
+      handleProtectedNav("/report");
+    }}
+    className={({ isActive }) =>
+      `hover:text-[#d09347] ${
+        isActive ? "text-[#d09347] font-semibold underline" : "text-black"
+      }`
+    }
+  >
+    Report Issue
+  </NavLink>
+
+  <NavLink
+    to="/view-complaints"
+    onClick={(e) => {
+      e.preventDefault();
+      handleProtectedNav("/view-complaints");
+    }}
+    className={({ isActive }) =>
+      `hover:text-[#d09347] ${
+        isActive ? "text-[#d09347] font-semibold underline" : "text-black"
+      }`
+    }
+  >
+    View Complaints
+  </NavLink>
+
+</div>
 
         {/* AUTH */}
         <div className="flex gap-3">
@@ -57,7 +99,12 @@ export default function Landing() {
             </>
           ) : (
             <>
-            <button
+            {loggedInUser?.username && (
+  <span className="hidden md:flex items-center font-semibold text-[#7e5511]">
+    Welcome,&nbsp;{loggedInUser.username}
+  </span>
+)}
+    <button
   onClick={() => (window.location.href = "/profile")}
   className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#7e5511] hover:scale-105 transition"
 >
@@ -79,7 +126,7 @@ export default function Landing() {
     localStorage.clear();
     window.location.href = "/";
   }}
-  className="px-4 py-1 border rounded-full bg-white text-black font-semibold"
+  className="px-5 py-1.5 border border-black rounded-full hover:bg-[#7e5511] hover:text-white transition"
 >
   Logout
 </button>
