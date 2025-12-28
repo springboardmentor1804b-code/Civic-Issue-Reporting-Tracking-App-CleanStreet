@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import axios from "axios";
 
 export default function Registration() {
   const [formData, setFormData] = useState({
@@ -20,7 +21,8 @@ export default function Registration() {
   const passwordStrength = () => {
     const p = formData.password;
     if (!p) return { label: "", width: "0%", color: "" };
-    if (p.length < 6) return { label: "Weak", width: "33%", color: "bg-red-500" };
+    if (p.length < 6)
+      return { label: "Weak", width: "33%", color: "bg-red-500" };
     if (/[A-Z]/.test(p) && /\d/.test(p))
       return { label: "Strong", width: "100%", color: "bg-green-600" };
     return { label: "Medium", width: "66%", color: "bg-yellow-500" };
@@ -28,7 +30,7 @@ export default function Registration() {
 
   const strength = passwordStrength();
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
 
     const { username, email, password, confirmPassword, role } = formData;
@@ -43,66 +45,55 @@ export default function Registration() {
       return;
     }
 
-    localStorage.setItem("user", JSON.stringify(formData));
-    localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem(
-      "loggedInUser",
-      JSON.stringify({ username: formData.username })
-    );
+  try {
+  const res = await axios.post(
+    "http://localhost:5000/api/auth/register",
+    formData
+  );
 
-    alert("Registration Successful!");
-    window.location.href = "/";
+  alert("Registration Successful 🎉");
+
+  // AUTO LOGIN
+  localStorage.setItem("token", res.data.token);
+  localStorage.setItem("isLoggedIn", "true");
+  localStorage.setItem("loggedInUser", JSON.stringify(res.data.user));
+
+  window.location.href = "/";   // redirect to landing page
+
+} catch (err) {
+  console.error(err);
+  alert(err.response?.data?.message || "Registration failed ❌");
+}
+
   };
 
   return (
     <div className="h-screen flex items-center justify-center bg-[#f6f3ee] px-4 overflow-hidden">
-
-      {/* MAIN CARD */}
       <div className="w-full max-w-6xl h-[94vh] grid grid-cols-1 md:grid-cols-2 rounded-[44px] overflow-hidden shadow-2xl bg-white">
 
-        {/* ================= LEFT PANEL ================= */}
+        {/* LEFT */}
         <div className="bg-[#C2873B] flex flex-col h-full">
-
-          {/* TOP CONTENT */}
           <div className="flex flex-col items-center text-center pt-8 pb-5 px-8">
-            <img
-              src="/street-light-icon.svg"
-              alt="logo"
-              className="w-12 mb-2"
-            />
-
-            <h1 className="text-3xl font-extrabold text-black mb-1">
-              Join CleanStreet
-            </h1>
-
-            <p className="text-black text-sm max-w-sm">
+            <img src="/street-light-icon.svg" className="w-12 mb-2" alt="" />
+            <h1 className="text-3xl font-extrabold">Join CleanStreet</h1>
+            <p className="text-sm max-w-sm">
               Be a part of making your city cleaner and smarter.
             </p>
           </div>
 
-          {/* IMAGE (FLUSH TO BOTTOM) */}
-          <div className="flex-1 w-full">
-            <img
-              src="/street.jpg"
-              alt="city"
-              className="w-full h-full object-cover"
-            />
+          <div className="flex-1">
+            <img src="/street.jpg" className="w-full h-full object-cover" />
           </div>
         </div>
 
-        {/* ================= RIGHT PANEL ================= */}
+        {/* RIGHT */}
         <div className="flex items-center justify-center px-7">
           <div className="w-full max-w-md">
 
-            
-
             <form onSubmit={handleRegister} className="space-y-2.5">
 
-              {/* USERNAME */}
-              <Input label="Username" name="username" required onChange={handleChange} />
-
-              {/* EMAIL */}
-              <Input label="Email" name="email" required onChange={handleChange} />
+              <Input label="Username" name="username" value={formData.username} required onChange={handleChange} />
+              <Input label="Email" name="email" value={formData.email} required onChange={handleChange} />
 
               {/* PASSWORD */}
               <div>
@@ -114,9 +105,9 @@ export default function Registration() {
                   <input
                     type={showPassword ? "text" : "password"}
                     name="password"
+                    value={formData.password}
                     onChange={handleChange}
-                    className="w-full rounded-xl border px-4 py-2.5 text-sm
-                               focus:ring-2 focus:ring-[#C2873B]/40 outline-none"
+                    className="w-full rounded-xl border px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#C2873B]/40"
                   />
 
                   <button
@@ -143,17 +134,16 @@ export default function Registration() {
                 )}
               </div>
 
-              {/* CONFIRM PASSWORD */}
               <Input
                 label="Confirm Password"
                 name="confirmPassword"
                 type="password"
+                value={formData.confirmPassword}
                 required
                 onChange={handleChange}
               />
 
-              {/* LOCATION */}
-              <Input label="Location" name="location" onChange={handleChange} />
+              <Input label="Location" name="location" value={formData.location} onChange={handleChange} />
 
               {/* GENDER */}
               <div>
@@ -167,6 +157,7 @@ export default function Registration() {
                         type="radio"
                         name="gender"
                         value={g}
+                        checked={formData.gender === g}
                         onChange={handleChange}
                         className="accent-[#C2873B]"
                       />
@@ -181,32 +172,31 @@ export default function Registration() {
                 <label className="text-sm font-semibold">
                   Role <span className="text-red-500">*</span>
                 </label>
+
                 <select
                   name="role"
+                  value={formData.role}
                   onChange={handleChange}
-                  className="mt-1 w-full rounded-xl border px-4 py-2.5 text-sm
-                             focus:ring-2 focus:ring-[#C2873B]/40 outline-none"
+                  className="mt-1 w-full rounded-xl border px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#C2873B]/40"
                 >
                   <option value="">Select role</option>
-                  <option>User</option>
-                  <option>Volunteer</option>
-                  <option>Admin</option>
+                  <option value="user">User</option>
+                  <option value="volunteer">Volunteer</option>
+                  <option value="admin">Admin</option>
                 </select>
               </div>
 
-              {/* SUBMIT */}
               <button
                 type="submit"
-                className="w-full bg-[#C2873B] text-white py-2.5 rounded-full
-                           font-semibold text-sm shadow-md hover:brightness-95 transition mt-2"
+                className="w-full bg-[#C2873B] text-white py-2.5 rounded-full font-semibold text-sm shadow-md hover:brightness-95 mt-2"
               >
                 Create Account
               </button>
 
               <p className="text-center text-xs">
-                Already have an account?{" "}
+                Already have an account?
                 <a href="/login" className="text-blue-600 font-semibold">
-                  Login
+                  {" "}Login
                 </a>
               </p>
 
@@ -218,20 +208,20 @@ export default function Registration() {
   );
 }
 
-/* ================= INPUT COMPONENT ================= */
-function Input({ label, name, required, type = "text", onChange }) {
+function Input({ label, name, required, type = "text", value, onChange }) {
   return (
     <div>
       <label className="text-sm font-semibold">
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
+
       <input
         type={type}
         name={name}
+        value={value}
         onChange={onChange}
-        className="mt-1 w-full rounded-xl border px-4 py-2.5 text-sm
-                   focus:ring-2 focus:ring-[#C2873B]/40 outline-none"
+        className="mt-1 w-full rounded-xl border px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#C2873B]/40"
       />
     </div>
   );
