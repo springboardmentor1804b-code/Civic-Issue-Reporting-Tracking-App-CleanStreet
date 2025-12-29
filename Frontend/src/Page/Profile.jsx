@@ -14,40 +14,60 @@ import {
 } from "lucide-react";
 
 /* ================= NAVBAR ================= */
+
+/* ================= NAVBAR ================= */
+
 function Navbar() {
   const base = "px-3 py-2 text-sm font-medium transition-all duration-200";
   const active = "text-[#7e5511] border-b-2 border-[#7e5511]";
   const inactive = "text-gray-600 hover:text-[#7e5511]";
 
   return (
-    <nav className="w-full bg-white shadow">
+    <nav className="w-full bg-white shadow sticky top-0 z-50">
       <div className="w-full h-14 px-4 md:px-6 flex items-center justify-between">
+
+        {/* LEFT LOGO */}
         <div className="flex items-center">
           <img src="/street-light-icon.svg" className="h-8 w-8" alt="logo" />
-          <h1 className="text-lg md:text-xl font-bold text-[#7e5511]">
+          <h1 className="text-xl font-bold text-[#7e5511] ml-1">
             CleanStreet
           </h1>
         </div>
 
-        <div className="hidden md:flex gap-2">
-          {[
-            { to: "/dashboard", label: "Dashboard" },
-            { to: "/report", label: "Report Issue" },
-            { to: "/view-complaints", label: "View Complaints" },
-            { to: "/profile", label: "Profile" },
-          ].map((l) => (
-            <NavLink
-              key={l.to}
-              to={l.to}
-              className={({ isActive }) =>
-                `${base} ${isActive ? active : inactive}`
-              }
-            >
-              {l.label}
-            </NavLink>
-          ))}
-        </div>
+        {/* CENTER MENU */}
+        <div className="hidden md:flex gap-10 text-[15px] font-medium">
+              {[
+                { to: "/dashboard", label: "Dashboard" },
+                { to: "/report", label: "Report Issue" },
+                { to: "/view-complaints", label: "View Complaints" },
+                { to: "/profile", label: "Profile" },
+              ].map((l) => (
+                <NavLink
+                  key={l.to}
+                  to={l.to}
+                  className={({ isActive }) =>
+                    `relative group transition ${
+                      isActive
+                        ? "text-[#7e5511] font-semibold"
+                        : "text-black hover:text-[#7e5511]"
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      {l.label}
+                      <span
+                        className={`absolute left-0 -bottom-1 h-[2px] bg-[#7e5511] transition-all duration-300
+                         ${isActive ? "w-full" : "w-0 group-hover:w-full"}`}
+                      ></span>
+                    </>
+                  )}
+                </NavLink>
+              ))}
+            </div>
+        
 
+        {/* LOGOUT */}
         <button
           onClick={() => {
             localStorage.clear();
@@ -375,15 +395,21 @@ export default function Profile() {
                 <Shield size={18} /> Security Settings
               </h2>
 
-              <button
-                className="flex items-center gap-2 px-5 py-2 border border-[#c89b57] rounded-md hover:bg-[#c89b57]/10 transition"
-                onClick={() => setOpenPasswordModal(true)}
-              >
-                <Lock size={16} /> Change Password
-              </button>
-              <button className="flex items-center gap-2 px-5 py-2 border border-[#c89b57] rounded-md hover:bg-[#c89b57]/10 transition">
-            ⚙️ Privacy Settings
-              </button>
+              <div className="flex gap-3 mt-2">
+  <button
+    className="flex items-center gap-2 px-5 py-2 border border-[#c89b57] rounded-md hover:bg-[#c89b57]/10 transition"
+    onClick={() => setOpenPasswordModal(true)}
+  >
+    <Lock size={16} /> Change Password
+  </button>
+
+  <button
+    className="flex items-center gap-2 px-5 py-2 border border-[#c89b57] rounded-md hover:bg-[#c89b57]/10 transition"
+  >
+    ⚙️ Privacy Settings
+  </button>
+</div>
+
             </div>
           </div>
         </div>
