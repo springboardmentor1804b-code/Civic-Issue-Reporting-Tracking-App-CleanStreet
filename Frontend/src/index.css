@@ -19,6 +19,8 @@ html, body, #app {
 img {
   content-visibility: auto;
   image-rendering: -webkit-optimize-contrast;
+  loading: lazy;
+  decoding: async;
 }
 
 input,
@@ -128,7 +130,6 @@ textarea {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  contain: layout style paint;
 }
 
 .custom-scrollbar {

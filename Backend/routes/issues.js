@@ -58,6 +58,7 @@ router.get('/', async (req, res) => {
   try {
     const issues = await Issue.find()
       .populate('createdBy', '_id name role')
+      .populate('assignedTo', '_id name role')
       .sort({ createdAt: -1 });
 
     res.json({ success: true, data: issues });
@@ -74,7 +75,6 @@ router.post('/:id/vote', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const { voteType } = req.body;
-
 
     const userId = req.userId;
 
@@ -105,9 +105,7 @@ router.post('/:id/vote', authMiddleware, async (req, res) => {
 
     const userIdStr = userId.toString();
 
-    const isUpvoted = issue.upvotes
-      .filter(v => v != null)
-      .some(v => v.toString() === userIdStr);
+    const isUpvoted = issue.upvotes.filter(v => v != null).some(v => v.toString() === userIdStr);
 
     const isDownvoted = issue.downvotes
       .filter(v => v != null)
@@ -143,11 +141,10 @@ router.post('/:id/vote', authMiddleware, async (req, res) => {
     console.log('Update operations:', updateOperations);
 
     await Issue.findByIdAndUpdate(id, updateOperations, {
-      new: false, // we will fetch again
+      new: false,
       runValidators: true,
     });
 
-    // Now fetch full updated issue with all fields
     const updatedIssue = await Issue.findById(id)
       .populate('createdBy', '_id name role')
       .populate('comments.user', '_id name');
@@ -175,54 +172,57 @@ router.post('/:id/vote', authMiddleware, async (req, res) => {
   }
 });
 
-
-// Add this route to your existing issue routes
+/* ===================================================
+   UPDATE STATUS
+=================================================== */
 router.patch('/:id/status', authMiddleware, async (req, res) => {
   try {
     const { status } = req.body;
     const { id } = req.params;
 
-    // Validate status
     const validStatuses = ['received', 'in-progress', 'resolved'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid status. Must be: received, in-progress, or resolved'
+        error: 'Invalid status. Must be: received, in-progress, or resolved',
       });
     }
 
-    // Check if issue exists
     const issue = await Issue.findById(id);
     if (!issue) {
       return res.status(404).json({
         success: false,
-        error: 'Issue not found'
+        error: 'Issue not found',
       });
     }
 
-    // Update status
+    if (status === 'resolved' && !issue.assignedTo && req.userRole === 'Volunteer') {
+      issue.assignedTo = req.userId;
+      issue.acceptedAt = new Date();
+    }
+
     issue.status = status;
     issue.updatedAt = Date.now();
 
     await issue.save();
 
-    // Populate createdBy field if needed
     await issue.populate('createdBy', 'name email');
+    await issue.populate('assignedTo', 'name email');
 
     res.json({
       success: true,
       message: 'Status updated successfully',
-      data: issue
+      data: issue,
     });
-
   } catch (error) {
     console.error('Status update error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to update status'
+      error: 'Failed to update status',
     });
   }
 });
+
 
 /* ===================================================
    ADD COMMENT
@@ -264,6 +264,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const issue = await Issue.findById(req.params.id)
       .populate('createdBy', '_id name role')
+      .populate('assignedTo', '_id name role')
       .populate('comments.user', '_id name');
 
     if (!issue) {
@@ -278,7 +279,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 });
 
 /* ===================================================
-   UPDATE ISSUE (OWNER ONLY)
+   UPDATE ISSUE
 =================================================== */
 router.put('/:id', authMiddleware, upload.array('images', 5), async (req, res) => {
   try {
@@ -291,14 +292,26 @@ router.put('/:id', authMiddleware, upload.array('images', 5), async (req, res) =
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
-    const { title, description, priority, issueType, address, location } = req.body;
+    const { title, description, priority, issueType, address, location, existingImages } = req.body;
+
+    if (title) issue.title = title;
+    if (description) issue.description = description;
+    if (priority) issue.priority = priority;
+    if (issueType) issue.issueType = issueType;
+    if (address) issue.address = address;
 
     if (location) {
-      const parsed = JSON.parse(location);
+      const parsed = typeof location === 'string' ? JSON.parse(location) : location;
       issue.location = {
         lat: Number(parsed.lat),
         lng: Number(parsed.lng),
       };
+    }
+
+    if (existingImages) {
+      const parsedExisting =
+        typeof existingImages === 'string' ? JSON.parse(existingImages) : existingImages;
+      issue.images = parsedExisting;
     }
 
     if (req.files?.length) {
@@ -311,12 +324,6 @@ router.put('/:id', authMiddleware, upload.array('images', 5), async (req, res) =
       }
     }
 
-    issue.title = title ?? issue.title;
-    issue.description = description ?? issue.description;
-    issue.priority = priority ?? issue.priority;
-    issue.issueType = issueType ?? issue.issueType;
-    issue.address = address ?? issue.address;
-
     await issue.save();
     await issue.populate('createdBy', '_id name role');
 
@@ -327,51 +334,9 @@ router.put('/:id', authMiddleware, upload.array('images', 5), async (req, res) =
   }
 });
 
-router.put('/:id/progress', authMiddleware, async (req, res) => {
-  try {
-    const { progress } = req.body;
-    const issueId = req.params.id;
-
-    if (req.userRole !== 'Admin' && req.userRole !== 'Volunteer') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only Admin or Volunteer can update progress',
-      });
-    }
-
-    const allowedProgress = ['REPORTED', 'IN_PROGRESS', 'RESOLVED'];
-    if (!allowedProgress.includes(progress)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid progress value',
-      });
-    }
-
-    const issue = await Issue.findById(issueId);
-    if (!issue) {
-      return res.status(404).json({
-        success: false,
-        message: 'Issue not found',
-      });
-    }
-
-    issue.progress = progress;
-    await issue.save();
-
-    res.json({
-      success: true,
-      message: 'Progress updated successfully',
-      progress: issue.progress,
-    });
-  } catch (err) {
-    console.error('Progress update error:', err);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while updating progress',
-    });
-  }
-});
-
+/* ===================================================
+   DELETE ISSUE
+=================================================== */
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const issueId = req.params.id;
@@ -387,7 +352,6 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     const isOwner = issue.createdBy.toString() === req.userId;
     const isAdmin = req.userRole === 'Admin';
 
-    // ✅ Only creator OR Admin can delete
     if (!isOwner && !isAdmin) {
       return res.status(403).json({
         success: false,
@@ -409,12 +373,16 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     });
   }
 });
+
 /* ===================================================
    ACCEPT ISSUE (VOLUNTEER ONLY)
-   =================================================== */
+=================================================== */
 router.patch('/:id/accept', authMiddleware, async (req, res) => {
   try {
-    // Only volunteers can accept
+    const volunteerId = req.userId || (req.user && req.user._id);
+
+    console.log('Attempting to assign to Volunteer ID:', volunteerId);
+
     if (req.userRole !== 'Volunteer') {
       return res.status(403).json({
         success: false,
@@ -422,7 +390,6 @@ router.patch('/:id/accept', authMiddleware, async (req, res) => {
       });
     }
 
-    //  Find issue
     const issue = await Issue.findById(req.params.id);
     if (!issue) {
       return res.status(404).json({
@@ -431,7 +398,6 @@ router.patch('/:id/accept', authMiddleware, async (req, res) => {
       });
     }
 
-    //  Check if already assigned
     if (issue.assignedTo) {
       return res.status(400).json({
         success: false,
@@ -439,14 +405,12 @@ router.patch('/:id/accept', authMiddleware, async (req, res) => {
       });
     }
 
-    // Assign issue
     issue.assignedTo = req.userId;
-    issue.status = 'in-progress'; // ✅ MUST MATCH SCHEMA
+    issue.status = 'in-progress';
     issue.acceptedAt = new Date();
 
     await issue.save();
 
-    //  Populate and return updated issue
     const updatedIssue = await Issue.findById(issue._id)
       .populate('createdBy', '_id name role')
       .populate('assignedTo', '_id name role');
@@ -465,6 +429,57 @@ router.patch('/:id/accept', authMiddleware, async (req, res) => {
   }
 });
 
+/* ===================================================
+   DECLINE ISSUE (VOLUNTEER ONLY) - NEW ROUTE
+=================================================== */
+router.patch('/:id/decline', authMiddleware, async (req, res) => {
+  try {
+    if (req.userRole !== 'Volunteer') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only volunteers can decline issues',
+      });
+    }
 
+    const issue = await Issue.findById(req.params.id);
+    if (!issue) {
+      return res.status(404).json({
+        success: false,
+        message: 'Issue not found',
+      });
+    }
+
+    // Check if the volunteer is the one who accepted it
+    if (!issue.assignedTo || issue.assignedTo.toString() !== req.userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only decline issues assigned to you',
+      });
+    }
+
+    // Remove assignment and reset status to 'received'
+    issue.assignedTo = null;
+    issue.status = 'received';
+    issue.acceptedAt = null;
+
+    await issue.save();
+
+    const updatedIssue = await Issue.findById(issue._id)
+      .populate('createdBy', '_id name role')
+      .populate('assignedTo', '_id name role');
+
+    res.json({
+      success: true,
+      message: 'Issue declined successfully',
+      data: updatedIssue,
+    });
+  } catch (error) {
+    console.error('Decline issue error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while declining issue',
+    });
+  }
+});
 
 export default router;

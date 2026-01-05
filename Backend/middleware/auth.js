@@ -19,19 +19,18 @@ export default async function authMiddleware(req, res, next) {
       console.error('No user ID found in JWT payload:', payload);
       return res.status(401).json({ message: 'Invalid token: No user ID found' });
     }
-const user = await User.findById(userId).select('-password');
 
-if (!user) {
-  return res.status(401).json({ message: 'User not found' });
-}
+    const user = await User.findById(userId).select('-password');
 
-req.user = user;        // full user object
-req.userId = user._id; // user id
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
 
-next();
-   
-    req.user = payload;
-   
+    req.user = user;
+    req.userId = user._id.toString();
+    req.userRole = user.role;
+
+    next();
   } catch (err) {
     console.error('authMiddleware error', err);
     return res.status(401).json({ message: 'Invalid token' });

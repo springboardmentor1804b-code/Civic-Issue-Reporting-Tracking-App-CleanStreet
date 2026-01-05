@@ -1,15 +1,15 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuroraBackground from '../components/AuroraBackground';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import CustomSelect from '../components/CustomSelect';
 import axios from 'axios';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import toast from 'react-hot-toast';
-import { FaCheckCircle, FaHome, FaList } from 'react-icons/fa';
+import { FaCheckCircle, FaHome, FaList, FaLocationArrow } from 'react-icons/fa';
 
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -60,13 +60,23 @@ const SuccessModal = ({ isOpen, onClose, onNavigateDashboard, onNavigateComplain
   );
 };
 
-function LocationPicker({ setLocation }) {
+function MapUpdater({ position }) {
+  const map = useMap();
+  useEffect(() => {
+    if (position) {
+      map.setView(position, 15);
+    }
+  }, [position, map]);
+  return null;
+}
+
+function LocationPicker({ location, setLocation }) {
   useMapEvents({
     click(e) {
       setLocation(e.latlng);
     },
   });
-  return null;
+  return location ? <Marker position={location} /> : null;
 }
 
 export default function ReportIssue() {
@@ -77,13 +87,14 @@ export default function ReportIssue() {
   const [priority, setPriority] = useState('Select Priority');
   const [issueType, setIssueType] = useState('Select Issue Type');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [loadingGPS, setLoadingGPS] = useState(false);
 
   const fileInputRef = useRef(null);
   const formRef = useRef(null);
 
   const handleImageUpload = e => {
     const files = Array.from(e.target.files);
-    setImages(files);
+    setImages(prev => [...prev, ...files]);
   };
 
   const removeImage = index => {
@@ -93,6 +104,42 @@ export default function ReportIssue() {
         fileInputRef.current.value = '';
       }
       return updated;
+    });
+  };
+
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setLoadingGPS(true);
+    toast.loading('Locating...', { id: 'gps' });
+
+    const success = pos => {
+      const { latitude, longitude } = pos.coords;
+      setLocation({ lat: latitude, lng: longitude });
+      setLoadingGPS(false);
+      toast.success('Location found!', { id: 'gps' });
+    };
+
+    const error = err => {
+      console.warn('High accuracy error, trying low accuracy...', err);
+      navigator.geolocation.getCurrentPosition(
+        success,
+        finalErr => {
+          console.error(finalErr);
+          setLoadingGPS(false);
+          toast.error('Could not find location. Please tap map manually.', { id: 'gps' });
+        },
+        { enableHighAccuracy: false, timeout: 10000 }
+      );
+    };
+
+    navigator.geolocation.getCurrentPosition(success, error, {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0,
     });
   };
 
@@ -122,9 +169,7 @@ export default function ReportIssue() {
     if (priority === 'Select Priority') return toast.error('Please select priority');
     if (issueType === 'Select Issue Type') return toast.error('Please select issue type');
     if (!address) return toast.error('Address is required');
-
     if (!description) return toast.error('Please describe the issue');
-
     if (!location) return toast.error('Please select location on map');
     if (images.length === 0) return toast.error('Please upload at least one image');
 
@@ -150,19 +195,14 @@ export default function ReportIssue() {
       });
 
       toast.dismiss(loadingToastId);
-
       setShowSuccessModal(true);
       resetForm();
     } catch (err) {
       console.error(err);
-
       toast.dismiss(loadingToastId);
-
       toast.error(err.response?.data?.message || 'Error reporting issue. Please try again.');
     }
   };
-
-
 
   return (
     <div className="flex flex-col relative">
@@ -254,6 +294,13 @@ export default function ReportIssue() {
                         </button>
                       </div>
                     ))}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="bg-blue-500 text-white rounded-full w-10 h-10 self-center flex items-center justify-center text-3xl hover:bg-blue-600"
+                    >
+                      +
+                    </button>
                   </div>
                 )}
               </div>
@@ -270,19 +317,37 @@ export default function ReportIssue() {
               />
 
               <div>
-                <label className="block text-sm font-medium mb-2">Select Location on Map</label>
-                <div className="h-65 rounded-2xl overflow-hidden border shadow-sm z-0">
-                  <MapContainer center={[13.6288, 79.4192]} zoom={12} className="h-full w-full">
+                <label className="block text-sm font-medium mb-2">Select Location on Map *</label>
+                <div className="relative h-65 rounded-2xl overflow-hidden border shadow-sm">
+                  <MapContainer center={[17.385, 78.4867]} zoom={12} className="h-full w-full">
                     <TileLayer
                       url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                       attribution="&copy; CARTO"
                     />
-                    <LocationPicker setLocation={setLocation} />
-                    {location && <Marker position={location} />}
+                    <MapUpdater position={location} />
+                    <LocationPicker location={location} setLocation={setLocation} />
                   </MapContainer>
+
+                  <button
+                    type="button"
+                    onClick={getCurrentLocation}
+                    disabled={loadingGPS}
+                    className="absolute top-4 right-4 z-[1000] bg-white text-gray-800 px-4 py-2 rounded-xl shadow-md font-semibold hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 border border-gray-200 transition-all active:scale-95"
+                  >
+                    {loadingGPS ? (
+                      <span className="animate-spin text-blue-600">⌛</span>
+                    ) : (
+                      <FaLocationArrow className="text-blue-500" />
+                    )}
+                    {loadingGPS ? 'Locating...' : 'Use My GPS'}
+                  </button>
+
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] bg-black/75 text-white text-xs px-4 py-1.5 rounded-full pointer-events-none font-medium backdrop-blur-md">
+                    Tap map to set location manually
+                  </div>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Click on the map to mark the exact location of the issue.
+                  Click "Use My GPS" or tap anywhere on the map to mark the location.
                 </p>
               </div>
             </div>

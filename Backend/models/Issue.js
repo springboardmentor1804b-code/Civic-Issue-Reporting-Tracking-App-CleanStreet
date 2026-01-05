@@ -81,6 +81,10 @@ const issueSchema = new mongoose.Schema(
       ref: 'User',
       default: null,
     },
+    acceptedAt: {
+      type: Date,
+      default: null,
+    },
     status: {
       type: String,
       enum: ['received', 'in-progress', 'resolved'],

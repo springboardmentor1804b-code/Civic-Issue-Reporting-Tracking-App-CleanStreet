@@ -73,6 +73,30 @@ export default function Register() {
     // ✅ REQUIRED DOMAIN LOGIC
     const email = form.email.value.trim().toLowerCase();
 
+    if (role === 'User' && email.endsWith('@civix.com')) {
+      toast.error('User registration does not require @civix.com email');
+      toast.error('Change role or Email domain');
+      return;
+    }
+
+    if (role === 'Volunteer' && email.endsWith('@civix.com')) {
+      toast.error('Volunteer registration does not require @civix.com email');
+      toast.error('Change role or Email domain');
+      return;
+    }
+
+    if (role === 'User' && email.endsWith('@volunteer.civix.com')) {
+      toast.error('User registration does not require @volunteer.civix.com email');
+      toast.error('Change role or Email domain');
+      return;
+    }
+
+    if (role === 'Admin' && email.endsWith('@volunteer.civix.com')) {
+      toast.error('Admin registration require @civix.com email');
+      toast.error('Change role or Email domain');
+      return;
+    }
+
     if (role === 'Admin' && !email.endsWith('@civix.com')) {
       toast.error('Admin registration requires @civix.com email');
       return;
@@ -130,7 +154,7 @@ export default function Register() {
 
             <p className="text-gray-600 mb-6">Help us build a cleaner community.</p>
 
-            
+
               {/* 👇 YOUR ORIGINAL UI — UNCHANGED 👇 */}
               {/* (inputs, CustomSelect, buttons exactly as before) */}
 

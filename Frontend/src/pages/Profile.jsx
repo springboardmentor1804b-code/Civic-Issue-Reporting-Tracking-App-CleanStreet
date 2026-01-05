@@ -143,7 +143,7 @@ export default function Profile() {
         const updatedUser = { ...user, coordinates: coords };
         setUser(updatedUser);
         localStorage.setItem("user", JSON.stringify(updatedUser));
-        
+
         toast.success("Exact location updated!");
         setShowMapModal(false);
     } catch (err) {
@@ -480,18 +480,18 @@ setEditing(false);
                     <div className="flex items-center gap-4">
                       <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
                         <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-4xl">
-  {(editing ? preview : user.image) ? (
-    <img
-      src={editing ? preview : user.image}
-      alt="avatar"
-      className="w-full h-full object-cover"
-    />
-  ) : (
-    <span className="text-gray-700">
-      {(user.name || user.username || "U").charAt(0).toUpperCase()}
-    </span>
-  )}
-</div>
+                          {(editing ? preview : user.image) ? (
+                            <img
+                              src={editing ? preview : user.image}
+                              alt="avatar"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-gray-700">
+                              {(user.name || user.username || 'U').charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex flex-col gap-2">
@@ -544,34 +544,34 @@ setEditing(false);
 
             {/* Right: Security & actions */}
             <div className="bg-white rounded-xl shadow-md p-6">
-             <h3 className="text-2xl font-bold mb-6">Security and Privacy</h3>
+              <h3 className="text-2xl font-bold mb-6">Security and Privacy</h3>
               {/* ---  THIS BLOCK FOR VOLUNTEER GPS --- */}
               {user.role === 'Volunteer' && (
-    <div className="bg-blue-50 p-4 rounded-lg mb-4 flex items-center justify-between">
-        <div>
-            <div className="flex items-center gap-2">
-                <h4 className="text-xl font-bold text-gray-800">Volunteer GPS</h4>
-                {user.coordinates && user.coordinates.lat ? (
-                    <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold border border-green-200">
-                        ACTIVE
-                    </span>
-                ) : (
-                    <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold border border-yellow-200">
-                        NOT SET
-                    </span>
-                )}
-            </div>
-            <p className="text-gray-600 text-sm ">Used to assign nearby issues.</p>
-        </div>
+                <div className="bg-blue-50 p-4 rounded-lg mb-4 flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold">Volunteer GPS</p>
+                      {user.coordinates && user.coordinates.lat ? (
+                        <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold border border-green-200">
+                          ACTIVE
+                        </span>
+                      ) : (
+                        <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold border border-yellow-200">
+                          NOT SET
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-gray-600 text-sm ">Used to assign nearby issues.</p>
+                  </div>
 
-        <button 
-            onClick={() => setShowMapModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-full"
-        >
-            {user.coordinates && user.coordinates.lat ? "Update Pin 📍" : "Set Location 📍"}
-        </button>
-    </div>
-)}
+                  <button
+                    onClick={() => setShowMapModal(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-full"
+                  >
+                    {user.coordinates && user.coordinates.lat ? 'Update Pin' : 'Set Location'}
+                  </button>
+                </div>
+              )}
 
               <div className="bg-blue-50 p-4 rounded-lg mb-4 flex items-center justify-between">
                 <div>
@@ -653,27 +653,26 @@ setEditing(false);
               <div className="flex gap-4">
                 <button
                   onClick={handleLogout}
-                  className="flex-1 px-4 py-2 bg-cyan-300 rounded shadow"
+                  className="flex-1 px-4 py-2 bg-cyan-300 rounded shadow rounded"
                 >
-                  🔓 Logout
+                  Logout
                 </button>
                 <button
                   onClick={handleDelete}
                   className="px-4 py-2 bg-red-400 text-white rounded shadow"
                 >
-                  🗑 Delete Account
+                  Delete Account
                 </button>
               </div>
             </div>
           </div>
         </div>
-        <Footer/>
-        {/* --- MODAL --- */}
+        <Footer />
         {showMapModal && (
-            <VolunteerLocationModal 
-                onClose={() => setShowMapModal(false)}
-                onSave={handleSaveCoordinates}
-            />
+          <VolunteerLocationModal
+            onClose={() => setShowMapModal(false)}
+            onSave={handleSaveCoordinates}
+          />
         )}
       </div>
     </>
