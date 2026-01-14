@@ -42,6 +42,13 @@ const ISSUE_TYPE_META = {
   Other: { icon: FaExclamationTriangle, color: 'text-red-600', bg: 'bg-red-100' },
 };
 
+const STATUS_STYLES = {
+  received: { bg: 'bg-gray-100', text: 'text-gray-600', label: 'Pending' },
+  assigned: { bg: 'bg-blue-100', text: 'text-blue-600', label: 'Assigned' },
+  'in-progress': { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'In Progress' },
+  resolved: { bg: 'bg-green-100', text: 'text-green-700', label: 'Resolved' },
+};
+
 const PRIORITY_STYLES = {
   Low: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' },
   Medium: { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-300' },
@@ -80,7 +87,7 @@ const DeleteConfirmModal = React.memo(({ isOpen, onClose, onConfirm, title }) =>
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-[9999] p-4">
+    <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-9999 p-4">
       <div
         className={`bg-white rounded-xl shadow-2xl max-w-md w-full p-6 ${
           mounted ? 'animate-in fade-in zoom-in duration-200' : ''
@@ -125,6 +132,7 @@ DeleteConfirmModal.displayName = 'DeleteConfirmModal';
 const ReportCard = React.memo(({ report, userId, onViewDetails, onVote, isLoading }) => {
   const issueMeta = ISSUE_TYPE_META[report.issueType] || ISSUE_TYPE_META.Other;
   const priorityStyle = PRIORITY_STYLES[report.priority] || PRIORITY_STYLES.Low;
+  const statusStyle = STATUS_STYLES[report.status] || STATUS_STYLES.received;
   const IssueIcon = issueMeta.icon;
 
   const isUpvoted = useMemo(
@@ -152,6 +160,8 @@ const ReportCard = React.memo(({ report, userId, onViewDetails, onVote, isLoadin
     onVote(report._id, 'downvote');
   }, [report._id, onVote]);
 
+  const assignedName = report.assignedTo?.name || report.assignedTo?.username || null;
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
       <div className="flex justify-between items-center mb-3">
@@ -159,14 +169,27 @@ const ReportCard = React.memo(({ report, userId, onViewDetails, onVote, isLoadin
           <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${issueMeta.bg}`}>
             <IssueIcon className={`text-xl ${issueMeta.color}`} />
           </div>
-          <h3 className="font-semibold text-lg">{report.title}</h3>
+        <div>
+            <h3 className="font-semibold text-lg leading-tight">{report.title}</h3>
+            {/* --- NEW: Assigned To Label --- */}
+            {assignedName && (
+              <p className="text-xs text-gray-500 mt-1">
+                <span className="font-bold text-blue-600">Assigned to:</span> {assignedName}
+              </p>
+            )}
+          </div>
         </div>
-        <span
-          className={`px-3 py-1 text-xs rounded-full font-semibold ${priorityStyle.bg} ${priorityStyle.text}`}
-        >
-          {report.priority}
-        </span>
-      </div>
+        <div className="flex flex-col items-end gap-1">
+            <span className={`px-3 py-1 text-xs rounded-full font-semibold border ${priorityStyle.bg} ${priorityStyle.text} ${priorityStyle.border}`}>
+            {report.priority}
+            </span> 
+            {/* --- NEW: Status Badge --- */}
+            <span className={`px-3 py-1 text-xs rounded-full font-bold uppercase tracking-wider ${statusStyle.bg} ${statusStyle.text}`}>
+            {statusStyle.label}
+            </span>
+        </div>
+      </div> 
+    
 
       <p className="text-gray-600 text-sm line-clamp-3 break-words">{report.description}</p>
 
@@ -705,6 +728,14 @@ export default function CommunityReports() {
   }, [viewMode]);
 
   useEffect(() => {
+    if (userRole === 'Volunteer' && !localStorage.getItem('preferredViewMode')) {
+      setViewMode('all'); // Volunteers start with "Nearby"
+    } else if (userRole !== 'Volunteer' && !localStorage.getItem('preferredViewMode')) {
+      setViewMode('global'); // Users start with "All Reports"
+    }
+  }, [userRole]);
+
+  useEffect(() => {
     const loadUser = async () => {
       const token = localStorage.getItem('token');
       if (!token) return;
@@ -1157,7 +1188,10 @@ export default function CommunityReports() {
 
   const filteredReports = useMemo(() => {
     if (!userId) return [];
-
+    
+    if (viewMode === 'global') {
+        return reports;
+    }
     if (viewMode === 'all') {
       if (userRole === 'Volunteer') {
         if (!userLocation) return [];
@@ -1203,6 +1237,7 @@ export default function CommunityReports() {
           <h2 className="text-3xl font-bold">Community Reports</h2>
 
           <div className="flex gap-2">
+            {userRole === 'Volunteer' && (
             <button
               onClick={() => setViewMode('all')}
               className={`px-4 py-1.5 rounded-md text-sm font-semibold border
@@ -1212,9 +1247,18 @@ export default function CommunityReports() {
                     : 'bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-100'
                 }`}
             >
-              All Reports
+              Nearby
             </button>
-
+            )}
+            <button
+                onClick={() => setViewMode('global')}
+                className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all
+                  ${viewMode === 'global' ? 'bg-blue-600 text-white  border-blue-700'
+                    : 'bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-100'
+                }`}
+              >
+                {userRole === 'Volunteer' ? 'All Locations' : 'All Reports'}
+              </button>
             <button
               onClick={() => setViewMode('mine')}
               className={`px-4 py-1.5 rounded-md text-sm font-semibold border
