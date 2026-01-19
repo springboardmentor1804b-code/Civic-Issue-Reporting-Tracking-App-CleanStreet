@@ -91,7 +91,7 @@ export default function ReportIssue() {
 
   const fileInputRef = useRef(null);
   const formRef = useRef(null);
-
+  //Image upload handler
   const handleImageUpload = e => {
     const files = Array.from(e.target.files);
     setImages(prev => [...prev, ...files]);
