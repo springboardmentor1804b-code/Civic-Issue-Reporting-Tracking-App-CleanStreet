@@ -1,8 +1,10 @@
 import express from 'express';
-import upload from '../middleware/upload.js';
-import cloudinary from '../utils/cloudinary.js';
-import Issue from '../models/Issue.js';
 import authMiddleware from '../middleware/auth.js';
+import upload from '../middleware/upload.js';
+import { createAdminLog } from '../utils/createAdminLog.js';
+import Issue from '../models/Issue.js';
+import cloudinary from '../utils/cloudinary.js';
+import User from '../models/User.js';
 
 const router = express.Router();
 
@@ -42,6 +44,13 @@ router.post('/create', authMiddleware, upload.array('images', 5), async (req, re
       },
       images: imageUrls,
       createdBy: req.userId,
+    });
+
+    const creator = await User.findById(req.userId);
+
+    await createAdminLog({
+      userId: req.userId,
+      message: `${creator.username} created issue "${issue.title}"`,
     });
 
     res.status(201).json({ success: true, data: issue });
@@ -180,49 +189,53 @@ router.patch('/:id/status', authMiddleware, async (req, res) => {
     const { status } = req.body;
     const { id } = req.params;
 
-    const validStatuses = ['received', 'in-progress', 'resolved'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid status. Must be: received, in-progress, or resolved',
-      });
-    }
-
     const issue = await Issue.findById(id);
     if (!issue) {
-      return res.status(404).json({
-        success: false,
-        error: 'Issue not found',
-      });
+      return res.status(404).json({ success: false, message: 'Issue not found' });
     }
 
-    if (status === 'resolved' && !issue.assignedTo && req.userRole === 'Volunteer') {
-      issue.assignedTo = req.userId;
-      issue.acceptedAt = new Date();
+    const oldStatus = issue.status;
+
+    if (req.userRole === 'Volunteer') {
+      if (!issue.assignedTo || issue.assignedTo.toString() !== req.userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only update issues assigned to you',
+        });
+      }
+
+      if (status === 'received') {
+        return res.status(403).json({
+          success: false,
+          message: 'Volunteers cannot reset issue to received',
+        });
+      }
+    } else if (req.userRole !== 'Admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not allowed to update status',
+      });
     }
 
     issue.status = status;
-    issue.updatedAt = Date.now();
-
     await issue.save();
+    const actor = await User.findById(req.userId);
 
-    await issue.populate('createdBy', 'name email');
-    await issue.populate('assignedTo', 'name email');
+    await createAdminLog({
+      userId: req.userId,
+      message: `${actor.username} changed status from "${oldStatus}" to "${status}" for issue "${issue.title}"`,
+    });
 
-    res.json({
+    return res.status(200).json({
       success: true,
-      message: 'Status updated successfully',
+      message: `Status changed from "${oldStatus}" to "${status}"`,
       data: issue,
     });
   } catch (error) {
     console.error('Status update error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to update status',
-    });
+    return res.status(500).json({ success: false, message: 'Failed to update status' });
   }
 });
-
 
 /* ===================================================
    ADD COMMENT
@@ -325,6 +338,14 @@ router.put('/:id', authMiddleware, upload.array('images', 5), async (req, res) =
     }
 
     await issue.save();
+
+    const actor = await User.findById(req.userId);
+
+    await createAdminLog({
+      userId: req.userId,
+      message: `${actor.username} updated issue "${issue.title}"`,
+    });
+
     await issue.populate('createdBy', '_id name role');
 
     res.json({ success: true, data: issue });
@@ -360,6 +381,13 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     }
 
     await issue.deleteOne();
+    const actor = await User.findById(req.userId);
+
+    await createAdminLog({
+      userId: req.userId,
+      message: `${actor.username} deleted issue "${issue.title}"`,
+    });
+
 
     res.json({
       success: true,
@@ -411,6 +439,13 @@ router.patch('/:id/accept', authMiddleware, async (req, res) => {
 
     await issue.save();
 
+    const volunteer = await User.findById(req.userId);
+
+    await createAdminLog({
+      userId: req.userId,
+      message: `${volunteer.username} accepted issue "${issue.title}"`,
+    });
+
     const updatedIssue = await Issue.findById(issue._id)
       .populate('createdBy', '_id name role')
       .populate('assignedTo', '_id name role');
@@ -430,7 +465,7 @@ router.patch('/:id/accept', authMiddleware, async (req, res) => {
 });
 
 /* ===================================================
-   DECLINE ISSUE (VOLUNTEER ONLY) - NEW ROUTE
+   DECLINE ISSUE (VOLUNTEER ONLY)
 =================================================== */
 router.patch('/:id/decline', authMiddleware, async (req, res) => {
   try {
@@ -449,7 +484,6 @@ router.patch('/:id/decline', authMiddleware, async (req, res) => {
       });
     }
 
-    // Check if the volunteer is the one who accepted it
     if (!issue.assignedTo || issue.assignedTo.toString() !== req.userId) {
       return res.status(403).json({
         success: false,
@@ -457,12 +491,18 @@ router.patch('/:id/decline', authMiddleware, async (req, res) => {
       });
     }
 
-    // Remove assignment and reset status to 'received'
     issue.assignedTo = null;
     issue.status = 'received';
     issue.acceptedAt = null;
 
     await issue.save();
+
+    const volunteer = await User.findById(req.userId);
+
+    await createAdminLog({
+      userId: req.userId,
+      message: `${volunteer.username} declined issue "${issue.title}"`,
+    });
 
     const updatedIssue = await Issue.findById(issue._id)
       .populate('createdBy', '_id name role')
@@ -480,6 +520,84 @@ router.patch('/:id/decline', authMiddleware, async (req, res) => {
       message: 'Server error while declining issue',
     });
   }
+});
+
+/* ===================================================
+   ASSIGN VOLUNTEER (ADMIN ONLY)
+=================================================== */
+router.patch('/:id/assign', authMiddleware, async (req, res) => {
+  try {
+    if (req.userRole !== 'Admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admins can assign volunteers',
+      });
+    }
+
+    const { volunteerId } = req.body;
+
+    if (!volunteerId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Volunteer ID is required',
+      });
+    }
+
+    const issue = await Issue.findById(req.params.id);
+    if (!issue) {
+      return res.status(404).json({
+        success: false,
+        message: 'Issue not found',
+      });
+    }
+
+    const oldVolunteerId = issue.assignedTo;
+
+    issue.assignedTo = volunteerId;
+    issue.status = 'in-progress';
+    issue.acceptedAt = new Date();
+
+    await issue.save();
+
+    const admin = await User.findById(req.userId);
+    const newVolunteer = await User.findById(volunteerId);
+
+    if (!newVolunteer) {
+      return res.status(404).json({ message: 'New volunteer not found' });
+    }
+
+    let logMessage = '';
+
+    if (oldVolunteerId && oldVolunteerId.toString() !== volunteerId) {
+      const oldVolunteer = await User.findById(oldVolunteerId);
+      const oldVolunteerName = oldVolunteer ? oldVolunteer.username : 'Unknown/Deleted User';
+
+      logMessage = `${admin.username} changed assignment of issue "${issue.title}" from ${oldVolunteerName} to ${newVolunteer.username}`;
+    } else {
+      logMessage = `${admin.username} assigned issue "${issue.title}" to ${newVolunteer.username}`;
+    }
+
+    await createAdminLog({
+      userId: req.userId,
+      message: logMessage,
+    });
+
+    const updatedIssue = await Issue.findById(issue._id)
+      .populate('createdBy', '_id name role')
+      .populate('assignedTo', '_id name role');
+
+    res.json({
+      success: true,
+      message: 'Volunteer assigned successfully',
+      data: updatedIssue,
+    });
+    } catch (err) {
+      console.error('Assign volunteer error:', err);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to assign volunteer',
+      });
+    }
 });
 
 export default router;

@@ -8,6 +8,10 @@ import jwt from "jsonwebtoken";
 import User from "./models/User.js";
 import issueRoutes from './routes/issues.js';
 import authRoutes from './routes/auth.js';
+import adminLogsRoutes from './routes/logs.js';
+import { createAdminLog } from './utils/createAdminLog.js';
+import adminReportRoutes from './routes/adminReports.js';
+
 
 
 dotenv.config();
@@ -114,6 +118,10 @@ app.post("/api/auth/register", async (req, res) => {
     });
 
     await user.save();
+    await createAdminLog({
+      userId: user._id,
+      message: `New user "${user.username}" registered with role "${user.role}"`,
+    });
 
     const token = jwt.sign({ sub: user._id, role: user.role, email: user.email }, JWT_SECRET, { expiresIn: "6h" });
 
@@ -209,7 +217,7 @@ app.put("/api/auth/update", verifyToken, async (req, res) => {
     if (typeof req.body.name === "string") updates.name = req.body.name.trim();
     if (typeof req.body.phone === "string") updates.phone = req.body.phone.trim();
     if (typeof req.body.location === "string") updates.location = req.body.location.trim();
-    
+
     if (req.body.coordinates) {
        const { lat, lng } = req.body.coordinates;
        updates.coordinates = { lat, lng };
@@ -274,17 +282,163 @@ app.delete("/api/auth/delete", verifyToken, async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.userId);
     if (!user) return res.status(404).json({ message: "User not found" });
+    await createAdminLog({
+      userId: req.userId,
+      message: `User "${user.username}" deleted their own account`,
+    });
     return res.json({ message: "Account deleted" });
   } catch (err) {
     console.error("Delete error", err);
     return res.status(500).json({ message: "Server error" });
   }
 });
+
+app.get('/api/admin/users', verifyToken, async (req, res) => {
+  try {
+    if (req.userRole !== 'Admin') {
+      return res.status(403).json({ message: 'Access denied: Admins only' });
+    }
+
+    const users = await User.find({})
+      .select('-passwordHash')
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json(users);
+  } catch (err) {
+    console.error('Get users error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+app.get('/api/user/:id', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: 'Invalid user id',
+      });
+    }
+
+    const user = await User.findById(id).select('_id name role email location');
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'User does not exist',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (err) {
+    console.error('Error fetching user:', err);
+    return res.status(500).json({
+      message: 'Internal server error',
+    });
+  }
+});
+
 /**
- * Issue routes (Report Issue)
- * Protected by verifyToken
+ * PUT /api/admin/users/:id/role
+ * Admin changes user role
  */
+app.put('/api/admin/users/:id/role', verifyToken, async (req, res) => {
+  try {
+    if (req.userRole !== 'Admin') {
+      return res.status(403).json({ message: 'Admins only' });
+    }
+
+    const { id } = req.params;
+    const { role } = req.body;
+
+    const allowedRoles = ['Admin', 'Volunteer', 'User'];
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({ message: 'Invalid role value' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+
+    if (String(req.userId) === String(id)) {
+      return res.status(400).json({ message: 'You cannot change your own role' });
+    }
+
+    const targetUser = await User.findById(id);
+    if (!targetUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const oldRole = targetUser.role;
+
+    if (oldRole === role) {
+      return res.status(400).json({
+        message: `User already has role "${role}"`,
+      });
+    }
+
+    targetUser.role = role;
+    await targetUser.save();
+
+    const admin = await User.findById(req.userId);
+
+    await createAdminLog({
+      userId: req.userId,
+      message: `${admin.username} changed role of user "${targetUser.username}" from "${oldRole}" to "${role}"`,
+    });
+
+    return res.json({ message: 'Role updated', user: targetUser });
+  } catch (err) {
+    console.error('Update role error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+
+/**
+ * DELETE /api/admin/users/:id
+ * Admin deletes user
+ */
+app.delete('/api/admin/users/:id', verifyToken, async (req, res) => {
+  try {
+    if (req.userRole !== 'Admin') {
+      return res.status(403).json({ message: 'Admins only' });
+    }
+
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+
+    // Prevent self delete
+    if (String(req.userId) === String(id)) {
+      return res.status(400).json({ message: 'You cannot delete your own account' });
+    }
+
+    const user = await User.findByIdAndDelete(id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    const admin = await User.findById(req.userId);
+
+    await createAdminLog({
+      userId: req.userId,
+      message: `${admin.username} deleted user "${user.username}" (email: ${user.email})`,
+    });
+    return res.json({ message: 'User deleted successfully' });
+  } catch (err) {
+    console.error('Delete user error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
 app.use('/api/issues', verifyToken, issueRoutes);
+app.use('/api/admin-logs', verifyToken, adminLogsRoutes);
+app.use('/api/admin/reports', adminReportRoutes);
 
 // start server
 app.listen(PORT, () => console.log(`Auth server running on http://localhost:${PORT}`));

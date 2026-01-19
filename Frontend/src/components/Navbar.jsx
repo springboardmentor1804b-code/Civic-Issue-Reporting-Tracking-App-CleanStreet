@@ -1,11 +1,13 @@
-// src/components/Navbar.jsx
-import React from "react";
+
+import { useState,React } from 'react';
 import { Link, useNavigate } from "react-router-dom";
 import { NavLink } from 'react-router-dom';
 
 export default function Navbar() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user")) || {};
+  const isAdmin = user.role === "Admin" ? true : false ;
+
   const navLinkClass = ({ isActive }) =>
     isActive ? 'text-blue-600 font-semibold' : 'text-gray-600 hover:text-blue-600';
 
@@ -21,6 +23,11 @@ export default function Navbar() {
             <NavLink to="/dashboard" className={navLinkClass}>
               Dashboard
             </NavLink>
+            {isAdmin && (
+              <NavLink to="/admin-panel" className={navLinkClass}>
+                Admin Panel
+              </NavLink>
+            )}
             <NavLink to="/report-issue" className={navLinkClass}>
               Report Issue
             </NavLink>

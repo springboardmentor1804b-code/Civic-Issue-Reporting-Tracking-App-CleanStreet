@@ -1,20 +1,10 @@
-// src/pages/Profile.jsx
 import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/Navbar";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import VolunteerLocationModal from '../components/volunteerLocationModal';
 import Footer from '../components/Footer';
-/**
- * Profile page
- * - Fetches current user from GET /api/auth/me
- * - Shows account info including location
- * - Edit profile (name, phone, location, avatar preview) -> PUT /api/auth/update
- * - Change password -> PUT /api/auth/change-password
- * - Delete account -> DELETE /api/auth/delete
- *
- * Requires backend to implement the routes shown above and return JSON.
- */
+
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -23,26 +13,22 @@ export default function Profile() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Modal State
   const [showMapModal, setShowMapModal] = useState(false);
 
-  // editing state
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
     name: "",
     phone: "",
     location: "",
-    image: "", // dataURL (preview) — optional for prototype
+    image: "",
   });
   const [preview, setPreview] = useState("");
   const fileInputRef = useRef(null);
 
-  // password change
   const [pwOpen, setPwOpen] = useState(false);
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [pwLoading, setPwLoading] = useState(false);
 
-  // fetch user on mount
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -61,7 +47,6 @@ export default function Profile() {
         });
 
         if (res.status === 401 || res.status === 403) {
-          // invalid/expired token
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           toast.error("Session expired. Please login again.");
@@ -76,10 +61,9 @@ export default function Profile() {
         }
 
         const data = await res.json();
-        // backend returns { user: {...} } (we support both shapes)
+
         const u = data.user || data;
         setUser(u);
-        // set editing form defaults
         setForm({
           name: u.name || "",
           phone: u.phone || "",
@@ -87,7 +71,7 @@ export default function Profile() {
           image: u.image || "",
         });
         setPreview(u.image || "");
-        // store local copy (useful for UI if needed)
+
         localStorage.setItem("user", JSON.stringify(u));
       } catch (err) {
         console.error("Profile fetch error:", err);
@@ -100,7 +84,6 @@ export default function Profile() {
     fetchMe();
   }, [BACKEND, navigate]);
 
-  // input handlers
   const handleChange = (e) => setForm((s) => ({ ...s, [e.target.name]: e.target.value }));
 
   const handleImageChange = (e) => {
@@ -123,7 +106,6 @@ export default function Profile() {
     reader.readAsDataURL(file);
   };
 
-// --- SAVE COORDINATES (From Modal) ---
   const handleSaveCoordinates = async (coords) => {
     const token = localStorage.getItem("token");
     try {
@@ -133,13 +115,12 @@ export default function Profile() {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ coordinates: coords }), // Send only coordinates
+            body: JSON.stringify({ coordinates: coords }),
         });
 
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || "Failed to update location");
 
-        // Update local user state immediately
         const updatedUser = { ...user, coordinates: coords };
         setUser(updatedUser);
         localStorage.setItem("user", JSON.stringify(updatedUser));
@@ -152,7 +133,6 @@ export default function Profile() {
     }
   };
 
-  // Save profile (name/phone/location [+ image prototype])
   const handleSave = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -161,7 +141,6 @@ export default function Profile() {
       return;
     }
 
-    // minimal validation
     if (!form.name?.trim()) {
       toast.error("Name cannot be empty");
       return;
@@ -173,9 +152,7 @@ export default function Profile() {
         phone: form.phone?.trim() || "",
         location: form.location?.trim() || "",
         image: form.image || "",
-        // NOTE: backend update route in this project only supports name/phone/location.
-        // We keep `image` locally in this prototype. If you want server-side avatars,
-        // implement an upload endpoint or save base64 on server with proper limits.
+
       };
 
       const res = await fetch(`${BACKEND}/api/auth/update`, {
@@ -193,7 +170,6 @@ export default function Profile() {
         return;
       }
 
-      // success - update UI & localStorage
       const updatedUser = data.user;
 
 setUser(updatedUser);
@@ -212,15 +188,12 @@ setEditing(false);
     }
   };
 
-  // logout
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     toast.success("Logged out");
     navigate("/login");
   };
-
-  // delete account
   const handleDelete = async () => {
     if (!confirm("Delete account permanently? This cannot be undone.")) return;
     const token = localStorage.getItem("token");
@@ -249,7 +222,6 @@ setEditing(false);
     }
   };
 
-  // password handlers
   const handlePwChange = (e) => setPwForm((s) => ({ ...s, [e.target.name]: e.target.value }));
   const resetPwForm = () => setPwForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
 
@@ -341,7 +313,7 @@ setEditing(false);
       <div className="min-h-screen relative">
         <Navbar />
         <div className="max-w-6xl mx-auto px-4 py-10">
-          {/* Top card */}
+
           <div className="bg-white rounded-xl shadow-md p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
             <div className="flex items-start gap-6">
               <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-4xl">
@@ -364,7 +336,6 @@ setEditing(false);
                   <button
                     onClick={() => {
                       setEditing(s => !s);
-                      // ensure form is populated from current user (fresh)
                       setForm({
                         name: user.name || '',
                         phone: user.phone || '',
@@ -409,9 +380,8 @@ setEditing(false);
             </div>
           </div>
 
-          {/* Main grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Left: Account info / edit */}
+
             <div className="bg-white rounded-xl shadow-md p-6">
               <h3 className="text-2xl font-bold mb-6">Account Information</h3>
 
@@ -524,7 +494,6 @@ setEditing(false);
                     <button
                       onClick={() => {
                         setEditing(false);
-                        // revert to server values
                         setForm({
                           name: user.name || '',
                           phone: user.phone || '',
@@ -542,10 +511,8 @@ setEditing(false);
               )}
             </div>
 
-            {/* Right: Security & actions */}
             <div className="bg-white rounded-xl shadow-md p-6">
               <h3 className="text-2xl font-bold mb-6">Security and Privacy</h3>
-              {/* ---  THIS BLOCK FOR VOLUNTEER GPS --- */}
               {user.role === 'Volunteer' && (
                 <div className="bg-blue-50 p-4 rounded-lg mb-4 flex items-center justify-between">
                   <div>

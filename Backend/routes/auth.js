@@ -5,9 +5,6 @@ import authMiddleware from "../middleware/auth.js";
 
 const router = express.Router();
 
-/* =====================================================
-   REGISTER (DOMAIN-SPECIFIC)
-   ===================================================== */
 router.post("/register", async (req, res) => {
   try {
     const {
@@ -26,7 +23,6 @@ router.post("/register", async (req, res) => {
 
     const emailLower = email.toLowerCase();
 
-    // 🔒 DOMAIN RULES
     if (role === "Admin" && !emailLower.endsWith("@civix.com")) {
       return res.status(400).json({
         message: "Admin registration requires @civix.com email"
@@ -65,9 +61,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-/* =====================================================
-   CHANGE PASSWORD (UNCHANGED)
-   ===================================================== */
+/* CHANGE PASSWORD */
 router.put("/change-password", authMiddleware, async (req, res) => {
   try {
     const userId = req.userId;

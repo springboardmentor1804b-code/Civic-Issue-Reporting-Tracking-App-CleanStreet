@@ -171,7 +171,6 @@ const ReportCard = React.memo(({ report, userId, onViewDetails, onVote, isLoadin
           </div>
         <div>
             <h3 className="font-semibold text-lg leading-tight">{report.title}</h3>
-            {/* --- NEW: Assigned To Label --- */}
             {assignedName && (
               <p className="text-xs text-gray-500 mt-1">
                 <span className="font-bold text-blue-600">Assigned to:</span> {assignedName}
@@ -182,14 +181,13 @@ const ReportCard = React.memo(({ report, userId, onViewDetails, onVote, isLoadin
         <div className="flex flex-col items-end gap-1">
             <span className={`px-3 py-1 text-xs rounded-full font-semibold border ${priorityStyle.bg} ${priorityStyle.text} ${priorityStyle.border}`}>
             {report.priority}
-            </span> 
-            {/* --- NEW: Status Badge --- */}
+            </span>
             <span className={`px-3 py-1 text-xs rounded-full font-bold uppercase tracking-wider ${statusStyle.bg} ${statusStyle.text}`}>
             {statusStyle.label}
             </span>
         </div>
-      </div> 
-    
+      </div>
+
 
       <p className="text-gray-600 text-sm line-clamp-3 break-words">{report.description}</p>
 
@@ -708,6 +706,9 @@ export default function CommunityReports() {
     return localStorage.getItem('preferredViewMode') || 'all';
   });
 
+  const [showResolveModal, setShowResolveModal] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState(null);
+
   const [votingLoading, setVotingLoading] = useState({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -723,15 +724,16 @@ export default function CommunityReports() {
     newImages: [],
   });
 
+
   useEffect(() => {
     localStorage.setItem('preferredViewMode', viewMode);
   }, [viewMode]);
 
   useEffect(() => {
     if (userRole === 'Volunteer' && !localStorage.getItem('preferredViewMode')) {
-      setViewMode('all'); // Volunteers start with "Nearby"
+      setViewMode('all'); 
     } else if (userRole !== 'Volunteer' && !localStorage.getItem('preferredViewMode')) {
-      setViewMode('global'); // Users start with "All Reports"
+      setViewMode('global');
     }
   }, [userRole]);
 
@@ -839,37 +841,70 @@ export default function CommunityReports() {
     });
   }, []);
 
+  const updateStatus = async status => {
+    const toastId = toast.loading('Updating status...');
+
+    try {
+      const res = await fetch(`${BACKEND}/api/issues/${selectedReport._id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.message || 'Failed to update status', { id: toastId });
+        return;
+      }
+
+      setSelectedReport(data.data);
+      setReports(prev => prev.map(r => (r._id === data.data._id ? data.data : r)));
+
+      toast.success('Status updated successfully', { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to update status', { id: toastId });
+    }
+  };
+
+
   const handleStatusUpdate = useCallback(
+
     async newStatus => {
+      if (newStatus === selectedReport?.status) {
+         return;
+      }
+
+      if (
+        userRole === 'Volunteer' &&
+        selectedReport?.assignedTo?._id !== userId &&
+        selectedReport?.assignedTo !== userId
+      ) {
+        toast.error('You can only update issues assigned to you');
+        return;
+      }
+
+      if (userRole === 'Volunteer' && newStatus === 'received') {
+        toast.error('You cannot reset an issue to received');
+        return;
+      }
+
       if (userRole !== 'Admin' && userRole !== 'Volunteer') {
         toast.error('You cannot edit the progress');
         return;
       }
 
-      const toastId = toast.loading('Updating status...');
-
-      try {
-        const res = await fetch(`${BACKEND}/api/issues/${selectedReport._id}/status`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify({ status: newStatus }),
-        });
-
-        if (res.ok) {
-          const updated = await res.json();
-          setSelectedReport(updated.data);
-          setReports(prev => prev.map(r => (r._id === selectedReport._id ? updated.data : r)));
-          toast.success('Status updated successfully', { id: toastId });
-        } else {
-          toast.error('Failed to update status', { id: toastId });
-        }
-      } catch (err) {
-        console.error('Status update error:', err);
-        toast.error('Failed to update status', { id: toastId });
+      if (newStatus === 'resolved') {
+        setPendingStatus(newStatus);
+        setShowResolveModal(true);
+        return;
       }
+
+      await updateStatus(newStatus);
     },
     [selectedReport, userRole]
   );
@@ -1188,7 +1223,7 @@ export default function CommunityReports() {
 
   const filteredReports = useMemo(() => {
     if (!userId) return [];
-    
+
     if (viewMode === 'global') {
         return reports;
     }
@@ -1238,27 +1273,29 @@ export default function CommunityReports() {
 
           <div className="flex gap-2">
             {userRole === 'Volunteer' && (
-            <button
-              onClick={() => setViewMode('all')}
-              className={`px-4 py-1.5 rounded-md text-sm font-semibold border
+              <button
+                onClick={() => setViewMode('all')}
+                className={`px-4 py-1.5 rounded-md text-sm font-semibold border
                 ${
                   viewMode === 'all'
                     ? 'bg-blue-600 text-white  border-blue-700'
                     : 'bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-100'
                 }`}
-            >
-              Nearby
-            </button>
+              >
+                Nearby
+              </button>
             )}
             <button
-                onClick={() => setViewMode('global')}
-                className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all
-                  ${viewMode === 'global' ? 'bg-blue-600 text-white  border-blue-700'
-                    : 'bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-100'
-                }`}
-              >
-                {userRole === 'Volunteer' ? 'All Locations' : 'All Reports'}
-              </button>
+              onClick={() => setViewMode('global')}
+              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all
+                  ${
+                    viewMode === 'global'
+                      ? 'bg-blue-600 text-white  border-blue-700'
+                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-100'
+                  }`}
+            >
+              {userRole === 'Volunteer' ? 'All Locations' : 'All Reports'}
+            </button>
             <button
               onClick={() => setViewMode('mine')}
               className={`px-4 py-1.5 rounded-md text-sm font-semibold border
@@ -1293,6 +1330,52 @@ export default function CommunityReports() {
         onConfirm={confirmDelete}
         title={selectedReport?.title}
       />
+
+      {showResolveModal && (
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-9999"
+          onClick={() => {
+            setShowResolveModal(false);
+            setPendingStatus(null);
+          }}
+        >
+          <div
+            className="bg-white rounded-xl p-6 max-w-md w-full shadow-xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold mb-3 text-red-600">Resolve Issue</h3>
+
+            <p className="text-gray-700 mb-6">
+              This issue will be marked as <b>resolved</b>.
+              <br />
+              This action cannot be undone.
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowResolveModal(false);
+                  setPendingStatus(null);
+                }}
+                className="px-4 py-2 rounded-md border"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowResolveModal(false);
+                  updateStatus(pendingStatus);
+                  setPendingStatus(null);
+                }}
+                className="px-4 py-2 rounded-md bg-red-600 text-white"
+              >
+                Yes, Resolve
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ReportModal
         selectedReport={selectedReport}

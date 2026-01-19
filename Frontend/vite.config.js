@@ -13,4 +13,12 @@ export default defineConfig({
       },
     },
   },
+  optimizeDeps: {
+    include: [
+      '@mui/x-data-grid',
+      '@mui/material/Box',
+      '@mui/material/Chip',
+      // Add other mui components if the error shifts to them
+    ],
+  },
 });

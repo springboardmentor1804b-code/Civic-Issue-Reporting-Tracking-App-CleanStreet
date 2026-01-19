@@ -1,4 +1,3 @@
-// Frontend/src/pages/Register.jsx
 import React, { useState, useEffect } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import toast from 'react-hot-toast';
@@ -70,7 +69,6 @@ export default function Register() {
       return;
     }
 
-    // ✅ REQUIRED DOMAIN LOGIC
     const email = form.email.value.trim().toLowerCase();
 
     if (role === 'User' && email.endsWith('@civix.com')) {
@@ -153,10 +151,6 @@ export default function Register() {
             </h1>
 
             <p className="text-gray-600 mb-6">Help us build a cleaner community.</p>
-
-
-              {/* 👇 YOUR ORIGINAL UI — UNCHANGED 👇 */}
-              {/* (inputs, CustomSelect, buttons exactly as before) */}
 
             <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -285,7 +279,6 @@ export default function Register() {
             </form>
           </main>
 
-          {/* Right side visual - hidden on small screens */}
           <aside className="hidden md:flex md:w-80 flex-col items-center justify-center p-6 rounded-xl bg-cyan-50 relative overflow-hidden">
             <div className="absolute inset-0 bg-[url('/Register.png')] bg-center bg-cover opacity-10 pointer-events-none" />
             <div className="z-10 flex flex-col items-center">

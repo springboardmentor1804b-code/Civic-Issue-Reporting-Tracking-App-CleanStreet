@@ -1,4 +1,3 @@
-// backend/models/User.js
 import mongoose from "mongoose";
 import validator from "validator";
 
@@ -17,7 +16,7 @@ const userSchema = new mongoose.Schema({
   passwordHash: { type: String, required: true, select: false },
   role: { type: String, default: "User" },
   location: { type: String, default: "" },
-  image: { type: String, default: "" }, 
+  image: { type: String, default: "" },
   coordinates: {
     lat: { type: Number },
     lng: { type: Number }

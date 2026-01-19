@@ -12,15 +12,11 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // REMOVED: const [error, setError] = useState("");
-
   const navigate = useNavigate();
   const BACKEND = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
   const submit = async e => {
     e.preventDefault();
-
-    // --- FIX START: Specific Validation ---
     if (!identifier.trim()) {
       toast.error('Email or username is required.');
       return;
@@ -30,7 +26,6 @@ export default function Login() {
       toast.error('Password is required.');
       return;
     }
-    // --- FIX END ---
 
     setLoading(true);
     try {
@@ -64,7 +59,6 @@ export default function Login() {
 
       toast.success('Login successful!');
 
-      // Navigate based on role if needed, or default to dashboard
       setTimeout(() => navigate('/dashboard'), 700);
     } catch (err) {
       console.error(err);
@@ -76,32 +70,25 @@ export default function Login() {
 
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden">
-      {/* BACKGROUND IMAGE */}
       <AuroraBackground></AuroraBackground>
-      {/* GLASS CARD */}
       <div
         className="relative z-10 w-full max-w-lg p-10
                       bg-white/80 backdrop-blur-xl backdrop-saturate-150
                       rounded-3xl shadow-2xl border border-white/30"
       >
-        {/* BRAND */}
         <div className="flex items-center gap-4 mb-8 w-full">
-          {/* LOGO */}
           <div
             className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/40 flex   items-center justify-center shadow-md"
           >
             <img src={sweepimg} alt="logo" className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-contain" />
           </div>
 
-          {/* TEXT + CLOSE */}
           <div className="flex-1">
             <div className="flex items-start justify-between gap-4">
-              {/* TITLE AREA */}
               <h1 className="font-extrabold text-lg sm:text-2xl leading-tight">
                 CIVIX CLEAN STREET
               </h1>
 
-              {/* CLOSE BUTTON */}
               <button onClick={() => navigate('/landing')} className="flex-shrink-0">
                 <IoIosCloseCircleOutline className="text-3xl sm:text-4xl text-gray-700 hover:text-red-500 transition" />
               </button>
@@ -114,9 +101,7 @@ export default function Login() {
         <h2 className="text-xl font-semibold mb-2">Welcome back</h2>
         <p className="mb-6 text-sm">Sign in to continue to your dashboard</p>
 
-        {/* FORM */}
         <form onSubmit={submit} className="space-y-6">
-          {/* Identifier */}
           <div>
             <label className="text-sm mb-1 block">Email or username</label>
             <input
@@ -127,7 +112,6 @@ export default function Login() {
             />
           </div>
 
-          {/* Password */}
           <div>
             <label className=" text-sm mb-1 block">Password</label>
             <div className="relative">
@@ -147,9 +131,6 @@ export default function Login() {
               </button>
             </div>
           </div>
-
-
-          {/* Submit */}
           <button
             disabled={loading}
             className="w-full py-3 rounded-xl text-white font-semibold text-lg
@@ -160,7 +141,6 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Footer */}
         <p className="text-gray-800 mt-6 text-center text-sm">
           Don't have an account?{' '}
           <button

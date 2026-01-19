@@ -1,6 +1,8 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import {
   FaExclamationCircle,
   FaCheckCircle,
@@ -9,156 +11,240 @@ import {
   FaListUl,
   FaMapMarkedAlt,
 } from 'react-icons/fa';
-import VolunteerLocationModal from '../components/volunteerLocationModal';
-import AuroraBackground from '../components/AuroraBackground';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
 import { useNavigate } from 'react-router-dom';
 
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
+import AuroraBackground from '../components/AuroraBackground';
+import VolunteerLocationModal from '../components/volunteerLocationModal';
 
-/* ---------- Stats ---------- */
-const stats = [
-  { title: 'Total Reports', value: '24', icon: FaExclamationCircle, bgColor: 'bg-blue-200' },
-  { title: 'Pending', value: '4', icon: FaClock, bgColor: 'bg-yellow-200' },
-  { title: 'In Progress', value: '8', icon: FaClock, bgColor: 'bg-cyan-200' },
-  { title: 'Resolved', value: '16', icon: FaCheckCircle, bgColor: 'bg-green-200' },
-];
+dayjs.extend(relativeTime);
 
-/* ---------- Activity ---------- */
-const recentActivity = [
-  'Pothole on Main Street resolved',
-  'New streetlight issue reported',
-  'Garbage dump complaint updated',
-  'Illegal parking complaint added',
-  'Overflowing drain reported',
-  'Road sign damaged',
-  'Street cleaning scheduled',
-];
+const BACKEND = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
+function extractIssueTitle(action) {
+  if (!action || typeof action !== 'string') return null;
+  const match = action.match(/issue\s+"([^"]+)"/i);
+  return match ? match[1] : null;
+}
+
+function getActivityText(log, userRole, currentUserId) {
+  const action = log.action || '';
+  const lower = action.toLowerCase();
+  const issueTitle = extractIssueTitle(action);
+
+  const isOwn = log.user_id && currentUserId && String(log.user_id) === String(currentUserId);
+
+  const issueRef = isOwn ? 'your issue' : 'the issue';
+
+  if (userRole === 'User') {
+    if (lower.includes('created issue') && issueTitle) {
+      return `You reported ${issueRef} "${issueTitle}"`;
+    }
+
+    if (lower.includes('deleted issue') && issueTitle) {
+      return `${issueRef} "${issueTitle}" was deleted`;
+    }
+
+    if (lower.includes('changed status') && issueTitle) {
+      return `Status updated for ${issueRef} "${issueTitle}"`;
+    }
+
+    if (issueTitle) {
+      return `Activity occurred on ${issueRef} "${issueTitle}"`;
+    }
+  }
+
+  if (userRole === 'Volunteer') {
+    if (lower.includes('assigned issue') && issueTitle) {
+      return `You have been assigned ${issueRef} "${issueTitle}"`;
+    }
+
+    if (lower.includes('changed assignment') && issueTitle) {
+      return `Assignment changed for ${issueRef} "${issueTitle}"`;
+    }
+
+    if (lower.includes('declined issue') && issueTitle) {
+      return `You declined ${issueRef} "${issueTitle}"`;
+    }
+
+    if (lower.includes('changed role')) {
+      return 'Your role was changed by admin';
+    }
+
+    if (issueTitle) {
+      return `Update on ${issueRef} "${issueTitle}"`;
+    }
+  }
+
+  return action;
+}
+
 
 export default function Dashboard() {
   const navigate = useNavigate();
+
+  const [userRole, setUserRole] = useState(null);
+  const [userId, setUserId] = useState(null);
+  const [activities, setActivities] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    ongoing: 0,
+    resolved: 0,
+  });
   const [showVolunteerLocationModal, setShowVolunteerLocationModal] = useState(false);
 
-  const BACKEND = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-        const res = await axios.get(`${BACKEND}/api/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+  const token = localStorage.getItem('token');
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchUser = async () => {
+      try {
+        const res = await axios.get(`${BACKEND}/api/auth/me`, { headers });
         const user = res.data.user;
-        if (user.role === 'Volunteer') {
-          if (!user.coordinates || !user.coordinates.lat) {
+
+        setUserRole(user.role);
+        setUserId(user._id);
+
+        if (user.role === 'Volunteer' && (!user.coordinates || !user.coordinates.lat)) {
           setShowVolunteerLocationModal(true);
-          }
         }
-      }
-      catch (err) {
-        console.error('Error fetching user data:', err);
+      } catch (err) {
+        console.error(err);
       }
     };
 
-    fetchUserData();
-  }, [BACKEND]);
-  const handleSaveLocation = async (coords) => {
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    const fetchIssues = async () => {
+      try {
+        const res = await fetch(`${BACKEND}/api/issues`, { headers });
+        const json = await res.json();
+        const issues = Array.isArray(json.data) ? json.data : [];
+
+        setStats({
+          total: issues.length,
+          pending: issues.filter(i => i.status === 'received').length,
+          ongoing: issues.filter(i => i.status === 'in-progress').length,
+          resolved: issues.filter(i => i.status === 'resolved').length,
+        });
+      } catch {
+        toast.error('Failed to load issues');
+      }
+    };
+
+    fetchIssues();
+  }, []);
+
+  useEffect(() => {
+    if (!userRole) return;
+
+    const fetchLogs = async () => {
+      try {
+        const res = await fetch(`${BACKEND}/api/admin-logs`, { headers });
+        const logs = await res.json();
+        console.log('Raw logs:', logs);
+
+        if (Array.isArray(logs)) {
+          const validLogs = logs.filter(log => {
+            return (
+              log &&
+              log._id &&
+              log.action &&
+              typeof log.action === 'string' &&
+              !log.action.includes('ArrayBinary')
+            );
+          });
+          console.log('Valid logs:', validLogs);
+          setActivities(validLogs);
+        } else {
+          setActivities([]);
+        }
+      } catch (err) {
+        console.error('Failed to load activity logs', err);
+        setActivities([]);
+      }
+    };
+
+    fetchLogs();
+  }, [userRole]);
+
+  const handleSaveLocation = async coords => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(
-        `${BACKEND}/api/auth/update`, 
-        { coordinates: coords }, 
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      toast.success("Location updated successfully!");
-      setShowVolunteerLocationModal(false); 
-    } catch (err) {
-      console.error("Failed to save location", err);
-      toast.error("Failed to save location.");
+      await axios.put(`${BACKEND}/api/auth/update`, { coordinates: coords }, { headers });
+      toast.success('Location updated');
+      setShowVolunteerLocationModal(false);
+    } catch {
+      toast.error('Failed to save location');
     }
   };
 
   return (
     <>
       <AuroraBackground />
-
       <div className="min-h-screen relative">
         <Navbar />
 
         <main className="max-w-7xl mx-auto px-4 py-10">
-          {/* Header */}
-          <div className="mb-4 md:mb-10 px-6 lg:p-0">
-            <h2 className="text-3xl font-bold text-gray-900">Dashboard</h2>
-            <p className="text-gray-600">Track and manage civic issues in your community</p>
-          </div>
+          <h2 className="text-3xl font-bold mb-2">Dashboard</h2>
+          <p className="text-gray-600 mb-8">Track and manage civic issues</p>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-4 px-6 lg:p-0">
-            {stats.map((stat, i) => {
-              const Icon = stat.icon;
-              return (
-                <div
-                  key={i}
-                  className={`rounded-xl shadow-sm p-6 flex justify-between ${stat.bgColor}`}
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">{stat.title}</p>
-                    <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
-                  </div>
-                  <div className="p-3 rounded-lg">
-                    <Icon size={24} />
-                  </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-10">
+            {[
+              { label: 'Total Reports', value: stats.total, icon: FaExclamationCircle },
+              { label: 'Pending', value: stats.pending, icon: FaClock },
+              { label: 'In Progress', value: stats.ongoing, icon: FaClock },
+              { label: 'Resolved', value: stats.resolved, icon: FaCheckCircle },
+            ].map(({ label, value, icon: Icon }) => (
+              <div key={label} className="bg-white rounded-xl p-6 shadow">
+                <p className="text-sm font-semibold">{label}</p>
+                <div className="flex justify-between items-center">
+                  <p className="text-3xl font-bold">{value}</p>
+                  <Icon />
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
 
-          {/* Activity + Actions */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 py-4 px-6">
-            {/* Recent Activity */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             <div className="lg:col-span-2">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Recent Activity</h3>
+              <h3 className="text-xl font-bold mb-4">Recent Activity</h3>
 
-              <div className="activity-scroll min-h-[88px] h-[clamp(260px,40vh,360px)] overflow-y-auto pr-2 pb-5 snap-y snap-mandatory ">
-                <div className="space-y-4">
-                  {recentActivity.map((text, idx) => (
-                    <div
-                      key={idx}
-                      className="snap-start bg-white/95 backdrop-blur-md
-                                 rounded-2xl px-6 py-5 shadow-md border border-gray-200
-                                 min-h-[88px]"
-                    >
-                      <p className="font-medium text-gray-900">{text}</p>
-                      <p className="text-sm text-gray-500 mt-1">{idx + 2} hours ago</p>
-                    </div>
-                  ))}
-                </div>
+              <div className="space-y-4 max-h-[360px] overflow-y-auto pr-2">
+                {activities.map(log => (
+                  <div key={log._id} className="bg-white rounded-xl px-6 py-4 shadow border-2 border-gray-400/50">
+                    <p className="font-medium leading-snug">
+                      {getActivityText(log, userRole, userId)}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {dayjs(log.timestamp || log.createdAt).fromNow()}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="mx-auto w-full sm:w-2/3 md:w-full">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h3>
-
-              <div className="space-y-4 px-6">
+            <div>
+              <h3 className="text-xl font-bold mb-4">Quick Actions</h3>
+              <div className="space-y-4">
                 <button
-                  className="w-full flex items-center justify-center gap-3 py-3 rounded-xl font-semibold text-black bg-green-400 transition hover:shadow-md"
                   onClick={() => navigate('/report-issue')}
+                  className="w-full py-3 bg-green-400 rounded-xl font-semibold flex justify-center gap-2"
                 >
-                  <FaPlusCircle />
-                  Report New Issue
+                  <FaPlusCircle /> Report Issue
                 </button>
 
-                <button className="w-full flex items-center justify-center gap-3 py-3 rounded-xl font-semibold text-black bg-blue-300 transition  hover:shadow-md">
-                  <FaListUl />
-                  View All Complaints
+                <button className="w-full py-3 bg-blue-300 rounded-xl font-semibold flex justify-center gap-2">
+                  <FaListUl /> View Issues
                 </button>
 
-                <button className="w-full flex items-center justify-center gap-3 py-3 rounded-xl font-semibold text-black bg-teal-400 transition  hover:shadow-md">
-                  <FaMapMarkedAlt />
-                  Issue Map
+                <button className="w-full py-3 bg-teal-400 rounded-xl font-semibold flex justify-center gap-2">
+                  <FaMapMarkedAlt /> Issue Map
                 </button>
               </div>
             </div>
@@ -167,10 +253,11 @@ export default function Dashboard() {
 
         <Footer />
       </div>
-     {showVolunteerLocationModal && (
+
+      {showVolunteerLocationModal && (
         <VolunteerLocationModal
           onClose={() => setShowVolunteerLocationModal(false)}
-          onSave={handleSaveLocation} 
+          onSave={handleSaveLocation}
         />
       )}
     </>

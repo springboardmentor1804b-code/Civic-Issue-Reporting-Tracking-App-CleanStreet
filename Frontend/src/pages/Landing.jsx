@@ -1,4 +1,3 @@
-// src/pages/Landing.jsx
 import { React, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuroraBackground from '../components/AuroraBackground';
@@ -9,12 +8,11 @@ export default function Landing() {
   const mainSectionRef = useRef(null);
   const headline = " Together for cleaner neighbourhoods.";
 
-    // typing effect (small, fast)
     useEffect(() => {
     let i = 0;
     let cancelled = false;
 
-    setTypedText(""); // always start empty
+    setTypedText("");
 
     function typeNext() {
       if (cancelled) return;
@@ -22,7 +20,7 @@ export default function Landing() {
       if (i < headline.length) {
         setTypedText(prev => prev + headline.charAt(i));
         i++;
-        setTimeout(typeNext, 35); // smooth speed
+        setTimeout(typeNext, 35);
       }
     }
 
@@ -56,19 +54,15 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* HERO - full viewport */}
+
       <header className="relative h-screen w-full overflow-hidden">
-        {/* background image */}
         <div
           className="absolute inset-0 bg-cover bg-center filter saturate-90"
           style={{ backgroundImage: "url('/street.jpg')" }}
           aria-hidden="true"
         />
 
-        {/* dark + color overlay to dull the image and give contrast for text */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/40" />
-
-        {/* subtle texture overlay from public/bg.jpg (low opacity) */}
         <div
           className="absolute inset-0 bg-[url('/bg.jpg')] bg-cover bg-center opacity-20 mix-blend-overlay pointer-events-none"
           aria-hidden="true"
@@ -81,7 +75,6 @@ export default function Landing() {
               <div className="flex flex-col justify-center items-center">
                 <div className="flex gap-4 justify-center items-center">
                   <div className="aspect-square rounded-full bg-white/20 flex items-center justify-center  w-10 h-10 sm:w-20 sm:h-20 md:w-28 md:h-28 lg:w-32 lg:h-32 ">
-                    {/* small logo from public */}
                     <img
                       src="/sweep.jpg"
                       alt="CleanStreet logo"
@@ -132,7 +125,6 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* HOW IT WORKS — appears after you scroll */}
       <main ref={mainSectionRef} className="relative w-full overflow-hidden bg-slate-50 py-16">
         <AuroraBackground className="h-fit"></AuroraBackground>
         <div className="relative z-10 max-w-6xl mx-auto px-6">

@@ -5,7 +5,6 @@ import toast from 'react-hot-toast';
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
-// --- FIX: Default Leaflet Marker Icons ---
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
 
@@ -16,19 +15,17 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// --- SUB-COMPONENT: Instantly Snap to Location ---
 function MapUpdater({ position }) {
   const map = useMap();
   useEffect(() => {
     if (position) {
 
-      map.setView(position, 15); 
+      map.setView(position, 15);
     }
   }, [position, map]);
   return null;
 }
 
-// --- SUB-COMPONENT: Click Handler ---
 function LocationMarker({ position, setPosition }) {
   useMapEvents({
     click(e) {
@@ -39,11 +36,9 @@ function LocationMarker({ position, setPosition }) {
 }
 
 const VolunteerLocationModal = ({ onClose, onSave }) => {
-  // Default: Hyderabad/Secunderabad 
   const [position, setPosition] = useState({ lat: 17.3850, lng: 78.4867 });
   const [loading, setLoading] = useState(false);
 
-  // --- ROBUST GPS LOGIC ---
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
       toast.error("Geolocation is not supported by your browser");
@@ -55,7 +50,6 @@ const VolunteerLocationModal = ({ onClose, onSave }) => {
 
     const success = (pos) => {
       const { latitude, longitude } = pos.coords;
-      // Update state -> Triggers MapUpdater 
       setPosition({ lat: latitude, lng: longitude });
       setLoading(false);
       toast.success("Location found!", { id: "gps" });
@@ -63,7 +57,6 @@ const VolunteerLocationModal = ({ onClose, onSave }) => {
 
     const error = (err) => {
       console.warn("High accuracy error, trying low accuracy...", err);
-      // Fallback: Try again with low accuracy if high fails
       navigator.geolocation.getCurrentPosition(
         success,
         (finalErr) => {
@@ -75,11 +68,10 @@ const VolunteerLocationModal = ({ onClose, onSave }) => {
       );
     };
 
-    // First Try: High Accuracy (GPS)
     navigator.geolocation.getCurrentPosition(success, error, {
       enableHighAccuracy: true,
-      timeout: 15000, // Wait 15 seconds before failing
-      maximumAge: 0   // Do not use old cached locations
+      timeout: 15000,
+      maximumAge: 0
     });
   };
 
@@ -89,10 +81,9 @@ const VolunteerLocationModal = ({ onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      
+
       <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col relative">
-        
-        {/* Header */}
+
         <div className="flex items-center justify-between p-6 pb-2">
            <div>
               <h2 className="text-2xl font-bold text-gray-800">Confirm Location</h2>
@@ -100,18 +91,17 @@ const VolunteerLocationModal = ({ onClose, onSave }) => {
                 Pin your exact location on the map below
               </p>
            </div>
-           <button 
-             onClick={onClose} 
+           <button
+             onClick={onClose}
              className="p-2 bg-gray-100 rounded-full hover:bg-red-100 hover:text-red-500 transition"
            >
              <FaTimes />
            </button>
         </div>
 
-        {/* Map Area */}
         <div className="p-6 pt-4">
             <div className="relative h-[350px] w-full rounded-2xl overflow-hidden border-2 border-gray-100 shadow-inner">
-            
+
               <MapContainer
                 center={position}
                 zoom={13}
@@ -121,13 +111,11 @@ const VolunteerLocationModal = ({ onClose, onSave }) => {
                   attribution='&copy; OpenStreetMap'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                
-                {/* Logic Components */}
+
                 <MapUpdater position={position} />
                 <LocationMarker position={position} setPosition={setPosition} />
               </MapContainer>
 
-              {/* Floating GPS Button */}
               <button
                 onClick={getCurrentLocation}
                 disabled={loading}
@@ -140,14 +128,13 @@ const VolunteerLocationModal = ({ onClose, onSave }) => {
                 )}
                 {loading ? "Locating..." : "Use My GPS"}
               </button>
-              
+
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] bg-black/75 text-white text-xs px-4 py-1.5 rounded-full pointer-events-none font-medium backdrop-blur-md">
                 Tap map to correct location manually
               </div>
             </div>
         </div>
 
-        {/* Footer */}
         <div className="p-6 pt-0 flex flex-col sm:flex-row gap-4 justify-end">
           <button
             onClick={onClose}
