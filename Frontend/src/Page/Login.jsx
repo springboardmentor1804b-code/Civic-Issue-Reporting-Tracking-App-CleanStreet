@@ -22,17 +22,26 @@ export default function Login() {
 
     try {
       // 🔥 AXIOS LOGIN API
-      const response = await axios.post("http://localhost:5000/api/auth/login", {
-        email,
-        password,
-      });
+      // LOGIN API
+const response = await axios.post(
+  "http://localhost:5000/api/auth/login",
+  { email, password }
+);
 
-      const user = response.data.user;
+// ✅ SAVE TOKEN
+localStorage.setItem("token", response.data.token);
 
-      // Save session
-      localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("loggedInUser", JSON.stringify({ username: user.username }));
-      localStorage.setItem("user", JSON.stringify(user));
+// ✅ SAVE USER
+localStorage.setItem(
+  "loggedInUser",
+  JSON.stringify(response.data.user)
+);
+
+// ✅ LOGIN FLAG
+localStorage.setItem("isLoggedIn", "true");
+
+// GO TO DASHBOARD
+navigate("/dashboard");
 
       alert("Login Successful!");
       navigate("/");

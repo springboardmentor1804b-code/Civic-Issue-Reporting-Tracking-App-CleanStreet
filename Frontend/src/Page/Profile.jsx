@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
 import axios from "axios";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import {
   User,
   Shield,
@@ -11,6 +13,7 @@ import {
   CheckCircle,
   AlertCircle,
   Camera,
+  MapPin,
 } from "lucide-react";
 
 /* ================= NAVBAR ================= */
@@ -114,7 +117,40 @@ export default function Profile() {
         });
 
         setUser(res.data.user);
-        setFormData(res.data.user);
+        // 🔥 ONLY FOR VOLUNTEERS: SEND GPS LOCATION
+if (
+  res.data.user.role === "volunteer" &&
+  (!res.data.user.locationGeo ||
+    !res.data.user.locationGeo.coordinates)
+) {
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      try {
+        await axios.put(
+          "http://localhost:5000/api/auth/update-location",
+          {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+      } catch (err) {
+        console.log("Failed to update volunteer location");
+      }
+    },
+    () => {
+      console.log("GPS permission denied");
+    }
+  );
+}
+
+        setFormData({
+          ...res.data.user,
+          city: res.data.user.city || '',
+        });
         setAvatar(res.data.user.avatar || null);
 
         localStorage.setItem(
@@ -147,6 +183,17 @@ export default function Profile() {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      // If volunteer, update location with city
+      if (user.role === "volunteer" && formData.city) {
+        await axios.put(
+          "http://localhost:5000/api/auth/update-location",
+          {
+            city: formData.city,
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      }
 
       setUser(res.data.user);
       localStorage.setItem("loggedInUser", JSON.stringify(res.data.user));
@@ -366,7 +413,9 @@ export default function Profile() {
                 <Field label="Full Name" name="fullName" value={formData.fullName} edit={editMode} onChange={handleChange} />
                 <Field label="Email" name="email" value={formData.email} edit={editMode} onChange={handleChange} />
                 <Field label="Phone" name="phone" value={formData.phone} edit={editMode} onChange={handleChange} />
-                <Field label="Location" name="location" value={formData.location} edit={editMode} onChange={handleChange} />
+                {user.role === "volunteer" && (
+                  <Field label="City" name="city" value={formData.city} edit={editMode} onChange={handleChange} />
+                )}
               </div>
 
               <label className="text-sm font-medium mt-4 block">Bio</label>

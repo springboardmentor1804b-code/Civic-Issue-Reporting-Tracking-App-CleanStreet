@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-
+import ReportIssue from "./Page/ReportIssue";
+import ViewComplaints from "./Page/ViewComplaints";
 import Landing from "./Page/Landing";
 import Login from "./Page/Login";
 import Registration from "./Page/Registration";
@@ -52,6 +53,24 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/report-issue"
+  element={
+    <ProtectedRoute>
+      <ReportIssue />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/view-complaints"
+  element={
+    <ProtectedRoute>
+      <ViewComplaints />
+    </ProtectedRoute>
+  }
+/>
+
 
         <Route
           path="/dashboard"

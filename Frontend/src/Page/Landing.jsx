@@ -1,22 +1,10 @@
 import React from "react";
-import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
-
+import { Link, NavLink, useNavigate } from "react-router-dom";
 
 export default function Landing() {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
-
- const navigate = useNavigate();
-const location = useLocation();
-
-const handleProtectedNav = (path) => {
-  if (!isLoggedIn) {
-    alert("Please login first!");
-    return;
-  }
-  navigate(path);
-};
-
+  const navigate = useNavigate();
 
   return (
     <div className="w-full min-h-screen bg-white">
@@ -37,90 +25,88 @@ const handleProtectedNav = (path) => {
         </div>
 
         {/* LINKS */}
-    <div className="hidden md:flex gap-6 font-medium">
+        <div className="hidden md:flex gap-6 font-medium">
+          {[
+            { to: "/dashboard", label: "Dashboard" },
+            { to: "/report-issue", label: "Report Issue" },
+            { to: "/view-complaints", label: "View Complaints" },
+          ].map((l) => (
+            <NavLink
+              key={l.to}
+              to={l.to}
+              className={({ isActive }) =>
+                `relative group transition ${
+                  isActive
+                    ? "text-[#d09347] font-semibold"
+                    : "text-black hover:text-[#d09347]"
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  {l.label}
+                  <span
+                    className={`absolute left-0 -bottom-1 h-[2px] bg-[#d09347] transition-all duration-300 ${
+                      isActive ? "w-full" : "w-0 group-hover:w-full"
+                    }`}
+                  ></span>
+                </>
+              )}
+            </NavLink>
+          ))}
+        </div>
 
-  {[
-    { to: "/dashboard", label: "Dashboard" },
-    { to: "/report", label: "Report Issue" },
-    { to: "/view-complaints", label: "View Complaints" },
-  ].map((l) => (
-    <NavLink
-      key={l.to}
-      to={l.to}
-      onClick={(e) => {
-        if (!isLoggedIn) {
-          e.preventDefault();
-          handleProtectedNav(l.to);
-        }
-      }}
-      className={({ isActive }) =>
-        `relative group transition ${
-          isActive
-            ? "text-[#d09347] font-semibold"
-            : "text-black hover:text-[#d09347]"
-        }`
-      }
-    >
-      {({ isActive }) => (
-        <>
-          {l.label}
-
-          <span
-            className={`absolute left-0 -bottom-1 h-[2px] bg-[#d09347] transition-all duration-300 ${
-              isActive ? "w-full" : "w-0 group-hover:w-full"
-            }`}
-          ></span>
-        </>
-      )}
-    </NavLink>
-  ))}
-
-</div>
-      {/* AUTH */}
+        {/* AUTH SECTION */}
         <div className="flex gap-3">
           {!isLoggedIn ? (
             <>
-              <Link to="/login" className="px-4 py-1 rounded-full bg-[#7e5511] text-white font-semibold hover:bg-[#b98238] transition">
+              <Link
+                to="/login"
+                className="px-4 py-1 rounded-full bg-[#7e5511] text-white font-semibold hover:bg-[#b98238] transition"
+              >
                 Login
               </Link>
-              <Link to="/register" className="px-4 py-1 rounded-full bg-[#7e5511] text-white font-semibold hover:bg-[#b98238] transition">
+              <Link
+                to="/register"
+                className="px-4 py-1 rounded-full bg-[#7e5511] text-white font-semibold hover:bg-[#b98238] transition"
+              >
                 Register
               </Link>
             </>
           ) : (
             <>
-            {loggedInUser?.username && (
-  <span className="hidden md:flex items-center font-semibold text-[#7e5511]">
-    Welcome,&nbsp;{loggedInUser.username}
-  </span>
-)}
-    <button
-  onClick={() => (window.location.href = "/profile")}
-  className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#7e5511] hover:scale-105 transition"
->
-  {loggedInUser?.avatar ? (
-    <img
-      src={loggedInUser.avatar}
-      alt="Profile"
-      className="w-full h-full object-cover"
-    />
-  ) : (
-    <span className="w-full h-full flex items-center justify-center bg-[#d09347] text-white font-semibold">
-      {loggedInUser?.username?.slice(0, 2).toUpperCase()}
-    </span>
-  )}
-</button>
+              {loggedInUser?.username && (
+                <span className="hidden md:flex items-center font-semibold text-[#7e5511]">
+                  Welcome,&nbsp;{loggedInUser.username}
+                </span>
+              )}
 
-<button
-  onClick={() => {
-    localStorage.clear();
-    window.location.href = "/";
-  }}
-  className="px-5 py-1.5 border border-black rounded-full hover:bg-[#7e5511] hover:text-white transition"
->
-  Logout
-</button>
+              <button
+                onClick={() => navigate("/profile")}
+                className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#7e5511] hover:scale-105 transition"
+              >
+                {loggedInUser?.avatar ? (
+                  <img
+                    src={loggedInUser.avatar}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="w-full h-full flex items-center justify-center bg-[#d09347] text-white font-semibold">
+                    {loggedInUser?.username?.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+              </button>
 
+              <button
+                onClick={() => {
+                  localStorage.clear();
+                  navigate("/");
+                }}
+                className="px-5 py-1.5 border border-black rounded-full hover:bg-[#7e5511] hover:text-white transition"
+              >
+                Logout
+              </button>
             </>
           )}
         </div>
@@ -143,7 +129,9 @@ const handleProtectedNav = (path) => {
 
           <button
             onClick={() =>
-              document.getElementById("how-it-works").scrollIntoView({ behavior: "smooth" })
+              document
+                .getElementById("how-it-works")
+                .scrollIntoView({ behavior: "smooth" })
             }
             className="mt-8 bg-[#d09347] px-8 py-3 text-lg rounded-md font-semibold shadow-lg hover:bg-[#b98238] transition"
           >
@@ -183,7 +171,9 @@ const handleProtectedNav = (path) => {
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 px-6">
           {["Report", "Review", "Resolve", "Track"].map((step, i) => (
             <div key={i} className="bg-gray-50 p-8 rounded-xl shadow-md text-center">
-              <h3 className="font-semibold text-lg">{i + 1}. {step}</h3>
+              <h3 className="font-semibold text-lg">
+                {i + 1}. {step}
+              </h3>
             </div>
           ))}
         </div>

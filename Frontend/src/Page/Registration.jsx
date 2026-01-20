@@ -18,6 +18,7 @@ export default function Registration() {
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
+  /* 🔐 PASSWORD STRENGTH */
   const passwordStrength = () => {
     const p = formData.password;
     if (!p) return { label: "", width: "0%", color: "" };
@@ -30,6 +31,9 @@ export default function Registration() {
 
   const strength = passwordStrength();
 
+
+
+  /* 🚀 REGISTER */
   const handleRegister = async (e) => {
     e.preventDefault();
 
@@ -45,26 +49,26 @@ export default function Registration() {
       return;
     }
 
-  try {
-  const res = await axios.post(
-    "http://localhost:5000/api/auth/register",
-    formData
-  );
+    let payload = { ...formData };
 
-  alert("Registration Successful 🎉");
+    try {
+      const res = await axios.post(
+        "http://localhost:5000/api/auth/register",
+        payload
+      );
 
-  // AUTO LOGIN
-  localStorage.setItem("token", res.data.token);
-  localStorage.setItem("isLoggedIn", "true");
-  localStorage.setItem("loggedInUser", JSON.stringify(res.data.user));
+      alert("Registration Successful 🎉");
 
-  window.location.href = "/";   // redirect to landing page
+      // AUTO LOGIN
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("loggedInUser", JSON.stringify(res.data.user));
 
-} catch (err) {
-  console.error(err);
-  alert(err.response?.data?.message || "Registration failed ❌");
-}
-
+      window.location.href = "/"; // landing page
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Registration failed ❌");
+    }
   };
 
   return (
@@ -143,13 +147,17 @@ export default function Registration() {
                 onChange={handleChange}
               />
 
-              <Input label="Location" name="location" value={formData.location} onChange={handleChange} />
+              <Input
+                label="Location"
+                name="location"
+                value={formData.location}
+                required={formData.role === "volunteer"}
+                onChange={handleChange}
+              />
 
               {/* GENDER */}
               <div>
-                <label className="text-sm font-semibold block mb-1">
-                  Gender
-                </label>
+                <label className="text-sm font-semibold block mb-1">Gender</label>
                 <div className="flex gap-4 text-sm">
                   {["Male", "Female", "Other"].map((g) => (
                     <label key={g} className="flex items-center gap-1">
@@ -180,9 +188,10 @@ export default function Registration() {
                   className="mt-1 w-full rounded-xl border px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#C2873B]/40"
                 >
                   <option value="">Select role</option>
-                  <option value="user">User</option>
-                  <option value="volunteer">Volunteer</option>
-                  <option value="admin">Admin</option>
+<option value="citizen">Citizen</option>
+<option value="volunteer">Volunteer</option>
+<option value="admin">Admin</option>
+
                 </select>
               </div>
 
@@ -195,9 +204,7 @@ export default function Registration() {
 
               <p className="text-center text-xs">
                 Already have an account?
-                <a href="/login" className="text-blue-600 font-semibold">
-                  {" "}Login
-                </a>
+                <a href="/login" className="text-blue-600 font-semibold"> Login</a>
               </p>
 
             </form>
