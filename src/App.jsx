@@ -13,10 +13,6 @@ import ManageUsersPage from "./pages/ManageUsersPage";
 import AdminComplaintsPage from "./pages/AdminComplaintsPage";
 import AdminReportsPage from "./pages/AdminReportsPage";
 
-
-
-
-
 function App() {
   return (
     <Router>
@@ -58,6 +54,3 @@ function App() {
 }
 
 export default App;
-
-
-
