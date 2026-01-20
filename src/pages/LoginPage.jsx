@@ -61,21 +61,40 @@ const LoginPage = () => {
         },
       });
 
-      if (profileRes.ok) {
-        const userData = await profileRes.json();
-        localStorage.setItem("user", JSON.stringify(userData));
-      } else {
-        // Fallback to login response user data
-        localStorage.setItem("user", JSON.stringify(data.user));
-      }
+      // if (profileRes.ok) {
+      //   const userData = await profileRes.json();
+      //   localStorage.setItem("user", JSON.stringify(userData));
+      // } else {
+      //   // Fallback to login response user data
+      //   localStorage.setItem("user", JSON.stringify(data.user));
+      // }
+
+      let userData;
+
+if (profileRes.ok) {
+  userData = await profileRes.json();
+  localStorage.setItem("user", JSON.stringify(userData));
+} else {
+  userData = data.user;
+  localStorage.setItem("user", JSON.stringify(userData));
+}
+
 
       // Show success toast before navigating
       showToast("Login successful! Redirecting to dashboard...", "success");
 
       // Navigate after a brief delay to show the toast
+      // setTimeout(() => {
+      //   navigate("/dashboard");
+      // }, 1500);
       setTimeout(() => {
-        navigate("/dashboard");
-      }, 1500);
+  if (userData.role === "Admin") {
+    navigate("/admin");
+  } else {
+    navigate("/dashboard");
+  }
+}, 1500);
+
     } catch (error) {
       console.error(error);
       setError("Server error. Please try again later.");

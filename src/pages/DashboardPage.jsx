@@ -2,10 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, Clock, TrendingUp, CheckCircle } from "lucide-react";
 
-// Layout Components
 import { Header, PageWrapper } from "../components/layout";
 
-// Common Components
 import { Loader } from "../components/common";
 
 // Dashboard Feature Components
@@ -22,6 +20,7 @@ import {
 
 // Services
 import { issueService } from "../services/issueService";
+
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -89,7 +88,6 @@ export default function DashboardPage() {
           }
         }
 
-        // Fetch issue stats
         try {
           const stats = await issueService.getIssueStats();
           setIssueStats(stats);
@@ -97,10 +95,15 @@ export default function DashboardPage() {
           console.error("Error fetching issue stats:", err);
         }
 
-        // Fetch user's issues
         try {
-          const userIssues = await issueService.getMyIssues();
-          setMyReports(userIssues);
+          if (user?.role === "Volunteer") {
+  const assigned = await issueService.getAssignedIssues();
+  setMyReports(assigned.issues || []);
+} else {
+  const userIssues = await issueService.getMyIssues();
+  setMyReports(userIssues);
+}
+
         } catch (err) {
           console.error("Error fetching user issues:", err);
         }
@@ -190,10 +193,10 @@ export default function DashboardPage() {
     time: getTimeAgo(issue.createdAt),
     type:
       issue.status === "Resolved"
-        ? "resolved"
+        ? "Resolved"
         : issue.status === "In Progress"
-        ? "progress"
-        : "reported",
+        ? "Progress"
+        : "Reported",
   }));
 
   // Generate trending issues from all issues
@@ -301,3 +304,8 @@ export default function DashboardPage() {
     </PageWrapper>
   );
 }
+
+
+
+
+

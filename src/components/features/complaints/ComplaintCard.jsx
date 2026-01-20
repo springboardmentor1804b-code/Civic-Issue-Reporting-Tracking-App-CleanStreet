@@ -18,6 +18,9 @@ const ComplaintCard = ({ complaint, onClick, onUpdate }) => {
     dislikes = [],
     comments = [],
     reportedBy,
+    offeredTo,
+    assignedTo,
+  volunteerResponse,
   } = complaint;
 
   const [isLiking, setIsLiking] = useState(false);
@@ -114,6 +117,24 @@ const ComplaintCard = ({ complaint, onClick, onUpdate }) => {
     }
   };
 
+    //Volunteer Accept / Reject
+  const handleVolunteerResponse = async (e, response) => {
+    e.stopPropagation();
+
+    try {
+      const res = await issueService.respondToIssue(_id, response);
+
+      onUpdate?.(_id, {
+        volunteerResponse: response,
+        status: res.issue?.status || status,
+      });
+    } catch (err) {
+      console.error("Volunteer response error:", err);
+      alert(err.message || "Failed to respond");
+    }
+  };
+
+
   return (
     <div
       onClick={() => onClick?.(complaint)}
@@ -170,12 +191,75 @@ const ComplaintCard = ({ complaint, onClick, onUpdate }) => {
           <MapPin className="w-4 h-4 text-green-500 flex-shrink-0" />
           <span className="truncate">{address || "Location not specified"}</span>
         </div>
+        
+        {/*Assigned Volunteer Info (User View) */}
+{assignedTo && volunteerResponse === "Accepted" && (
+  <div className="mb-3 text-sm text-green-700 font-medium">
+    🧑‍🔧 Assigned Volunteer:{" "}
+    <span className="font-semibold">
+      {assignedTo?.name}
+    </span>
+  </div>
+)}
 
-        {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-          {/* User Info */}
-          <div className="flex items-center gap-2">
-            <Avatar name={reportedBy?.name} size="sm" showRing={false} />
+{volunteerResponse === "Rejected" && (
+  <div className="mb-3 text-sm text-red-500 font-medium">
+   Volunteer rejected this issue
+  </div>
+)}
+
+  {/* Footer */}
+   <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+  {/* User Info */}
+  <div className="flex items-center gap-2">
+ 
+
+  {currentUser?.role === "Volunteer" &&
+  (offeredTo?._id || offeredTo)?.toString() === currentUser._id &&
+  volunteerResponse === "Pending" && (
+
+    <div className="flex gap-2 mt-2">
+      <button
+        onClick={(e) => handleVolunteerResponse(e, "Accepted")}
+        className="px-3 py-1 text-xs font-semibold rounded-lg bg-green-500 text-white hover:bg-green-600"
+      >
+        Accept
+      </button>
+
+      <button
+        onClick={(e) => handleVolunteerResponse(e, "Rejected")}
+        className="px-3 py-1 text-xs font-semibold rounded-lg bg-red-500 text-white hover:bg-red-600"
+      >
+        Reject
+      </button>
+    </div>
+)}
+
+{/* Volunteer Resolve Button */}
+{currentUser?.role === "Volunteer" &&
+  (assignedTo?._id || assignedTo)?.toString() === currentUser._id &&
+  status === "In Progress" && (
+
+    <button
+      onClick={async (e) => {
+        e.stopPropagation();
+        try {
+          await issueService.resolveIssue(_id);
+          onUpdate?.(_id, {
+            status: "Resolved",
+          });
+        } catch (err) {
+          alert(err.message || "Failed to resolve issue");
+        }
+      }}
+      className="mt-2 px-3 py-1 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+    >
+      Mark Resolved
+    </button>
+)}
+
+
+      <Avatar name={reportedBy?.name} size="sm" showRing={false} />
             <div className="flex flex-col">
               <span className="text-xs font-medium text-gray-700 truncate max-w-[100px]">
                 {reportedBy?.name || "Anonymous"}

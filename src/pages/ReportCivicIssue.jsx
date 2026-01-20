@@ -63,6 +63,12 @@ export default function ReportCivicIssue() {
     setIsSubmitting(true);
 
     try {
+      if (!position) {
+        setErrorMessage("Please select the issue location on the map");
+        setIsSubmitting(false);
+        return;
+      }
+
       const issueData = {
         issueTitle: e.target.issueTitle.value,
         issueType: e.target.issueType.value,
@@ -70,18 +76,26 @@ export default function ReportCivicIssue() {
         address: address,
         landmark: e.target.landmark.value,
         description: e.target.description.value,
-        location: position ? { lat: position.lat, lng: position.lng } : null,
+
+        //GeoJSON format (IMPORTANT for nearest volunteer)
+        location: {
+          type: "Point",
+          coordinates: [position.lng, position.lat],
+        },
       };
 
       await issueService.submitIssue(issueData, selectedFiles);
 
-      setSuccessMessage("Report submitted successfully! Redirecting to dashboard...");
+      setSuccessMessage(
+        "Report submitted successfully! Assigned to nearest volunteer."
+      );
+
       e.target.reset();
       setSelectedFiles([]);
       setPosition(null);
       setAddress("");
 
-      // Redirect to dashboard after showing success message
+      // Redirect to dashboard after success
       setTimeout(() => {
         navigate("/dashboard");
       }, 1500);

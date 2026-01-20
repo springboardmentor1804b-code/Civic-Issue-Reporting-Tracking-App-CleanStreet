@@ -116,6 +116,53 @@ export const issueService = {
     return response.json();
   },
 
+   // Get issues assigned to logged-in volunteer
+  async getAssignedIssues() {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error("Please login to view assigned issues");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/issues/assigned-to-me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+
+    });
+
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to fetch assigned issues");
+    }
+
+    return response.json();
+  },
+
+  //Volunteer ko jo issues OFFER hue hain
+async getOfferedIssues() {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    throw new Error("Please login to view offered issues");
+  }
+
+  const response = await fetch(`${API_BASE_URL}/issues/offered-to-me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Failed to fetch offered issues");
+  }
+
+  return response.json();
+},
+
+
   async getIssueById(id) {
     const response = await fetch(`${API_BASE_URL}/issues/${id}`);
 
@@ -287,4 +334,59 @@ export const issueService = {
 
     return response.json();
   },
+
+  // Volunteer Accept / Reject issue
+  async respondToIssue(issueId, response) {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error("Please login first");
+    }
+
+    const res = await fetch(
+      `${API_BASE_URL}/issues/${issueId}/respond`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ response }), 
+      }
+    );
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.message || "Failed to respond to issue");
+    }
+
+    return res.json();
+  },
+
+  //  Volunteer mark issue as resolved
+async resolveIssue(issueId) {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    throw new Error("Please login first");
+  }
+
+  const res = await fetch(
+    `${API_BASE_URL}/issues/${issueId}/resolve`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || "Failed to resolve issue");
+  }
+
+  return res.json();
+},
+
 };

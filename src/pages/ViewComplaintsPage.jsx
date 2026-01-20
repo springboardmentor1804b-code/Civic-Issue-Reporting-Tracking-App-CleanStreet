@@ -17,6 +17,7 @@ import { issueService } from "../services/issueService";
 import { ISSUE_TYPES } from "../constants";
 
 export default function ViewComplaintsPage() {
+  const user = JSON.parse(localStorage.getItem("user"));
   const [complaints, setComplaints] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -48,8 +49,33 @@ export default function ViewComplaintsPage() {
       if (typeFilter) params.issueType = typeFilter;
       if (searchQuery) params.search = searchQuery;
 
-      const response = await issueService.getIssues(params);
-      const newIssues = response.issues || [];
+let newIssues = [];
+let total = 0;
+ 
+
+if (user?.role === "Volunteer") {
+  // Offered issues (Accept / Reject ke liye)
+  const offeredRes = await issueService.getOfferedIssues();
+  const offeredIssues = offeredRes.issues || [];
+
+  // Assigned issues (Accepted ke baad)
+  const assignedRes = await issueService.getAssignedIssues();
+  const assignedIssues = assignedRes.issues || [];
+
+  // Combine both
+  newIssues = [...offeredIssues, ...assignedIssues];
+  total = newIssues.length;
+
+  setHasMore(false);
+} else {
+  const response = await issueService.getIssues(params);
+
+  newIssues = response.issues || [];
+  total = response.total || newIssues.length;
+
+  setHasMore(newIssues.length === 8);
+}
+
 
       if (reset) {
         setComplaints(newIssues);
@@ -57,8 +83,10 @@ export default function ViewComplaintsPage() {
         setComplaints((prev) => [...prev, ...newIssues]);
       }
 
-      setTotalCount(response.total || newIssues.length);
-      setHasMore(newIssues.length === 8);
+      setTotalCount(total);
+
+      setHasMore(user?.role !== "Volunteer" && newIssues.length === 8);
+
     } catch (error) {
       console.error("Error fetching complaints:", error);
     } finally {
@@ -94,6 +122,10 @@ export default function ViewComplaintsPage() {
 
   // Handle like/dislike update from card
   const handleComplaintUpdate = (id, updates) => {
+    if (user?.role === "Volunteer" && updates.volunteerResponse === "Rejected") {
+    setComplaints((prev) => prev.filter((c) => c._id !== id));
+    return;
+  }
     setComplaints((prev) =>
       prev.map((complaint) =>
         complaint._id === id ? { ...complaint, ...updates } : complaint
@@ -105,19 +137,16 @@ export default function ViewComplaintsPage() {
     }
   };
 
-  // Handle card click - open modal
   const handleCardClick = (complaint) => {
     setSelectedComplaint(complaint);
     setIsModalOpen(true);
   };
 
-  // Handle modal close
   const handleModalClose = () => {
     setIsModalOpen(false);
     setSelectedComplaint(null);
   };
 
-  // Handle save from modal
   const handleSaveComplaint = async (id, updateData) => {
     try {
       const updatedIssue = await issueService.updateIssue(id, updateData);

@@ -8,6 +8,13 @@ import DashboardPage from "./pages/DashboardPage";
 import ViewComplaintsPage from "./pages/ViewComplaintsPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ReportCivicIssue from  "./pages/ReportCivicIssue";
+import AdminPage from "./pages/AdminPage";
+import ManageUsersPage from "./pages/ManageUsersPage";
+import AdminComplaintsPage from "./pages/AdminComplaintsPage";
+import AdminReportsPage from "./pages/AdminReportsPage";
+
+
+
 
 
 function App() {
@@ -25,6 +32,26 @@ function App() {
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/report-issue" element={<ReportCivicIssue/>}></Route>
         <Route path="/complaints" element={<ViewComplaintsPage />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route
+  path="/admin/users"
+  element={
+    <ProtectedRoute allowedRoles={["Admin"]}>
+      <ManageUsersPage />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/admin/complaints"
+  element={
+    <ProtectedRoute allowedRoles={["Admin"]}>
+      <AdminComplaintsPage />
+    </ProtectedRoute>
+  }
+/>
+<Route path="/reports" element={<AdminReportsPage />} />
+
+
       </Routes>
     </Router>
   );

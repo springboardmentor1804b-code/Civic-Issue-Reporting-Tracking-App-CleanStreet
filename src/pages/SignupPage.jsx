@@ -8,6 +8,8 @@ import { AuthLayout, AuthFormCard, SocialLogin } from "../components/features/au
 
 // Assets
 import bgImage from "../assets/bg-signin.jpg";
+import LocationMap from "../components/features/report/LocationMap";
+
 
 const SignupPage = () => {
   const navigate = useNavigate();
@@ -17,6 +19,8 @@ const SignupPage = () => {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("User");
+  const [location, setLocation] = useState(null);
+
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -33,6 +37,11 @@ const SignupPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+      if (role === "Volunteer" && !location) {
+    setError("Please allow location access for Volunteer account");
+    showToast("Location is required for Volunteer", "warning");
+    return;
+  }
 
     if (!agreeTerms) {
       setError("Please agree to the Terms of Service and Privacy Policy");
@@ -64,6 +73,7 @@ const SignupPage = () => {
       phone,
       password,
       role,
+      ...(role === "Volunteer" && location ? { location } : {}),
     };
 
     try {
@@ -235,17 +245,61 @@ const SignupPage = () => {
                 <div className="relative">
                   <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
+                  value={role}
+                    onChange={(e) => {
+                      const selectedRole = e.target.value;
+                      setRole(selectedRole);
+
+                      if (selectedRole !== "Volunteer") {
+                        setLocation(null);
+                      }
+                    }}
                     className="w-full h-11 pl-10 pr-3 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all appearance-none cursor-pointer"
                   >
+
                     <option>User</option>
                     <option>Volunteer</option>
                     <option>Admin</option>
                   </select>
                 </div>
+                {role === "Volunteer" && !location && (
+               <p className="text-xs text-amber-600 mt-1">
+              Fetching your location, please allow GPS...
+                </p>
+              )}
               </div>
             </div>
+
+{role === "Volunteer" && (
+  <div className="mt-3">
+    <label className="text-sm font-semibold text-gray-700 mb-2 block">
+      Select Your Working Location
+    </label>
+
+    <LocationMap
+      position={
+        location
+          ? {
+              lat: location.coordinates[1],
+              lng: location.coordinates[0],
+            }
+          : null
+      }
+      setPosition={(pos) =>
+        setLocation({
+          type: "Point",
+          coordinates: [pos.lng, pos.lat],
+        })
+      }
+    />
+
+    {!location && (
+      <p className="text-xs text-amber-600 mt-1">
+        Please select your working area on the map
+      </p>
+    )}
+  </div>
+)}
 
             {/* Password */}
             <div>
@@ -286,12 +340,15 @@ const SignupPage = () => {
               </span>
             </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-3.5 rounded-xl font-semibold shadow-lg shadow-emerald-200 hover:shadow-xl hover:shadow-emerald-300 transition-all btn-press disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-            >
+
+  <button
+  type="submit"
+  disabled={
+    isLoading ||
+    (role === "Volunteer" && !location)
+  }
+  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-3.5 rounded-xl font-semibold shadow-lg shadow-emerald-200 hover:shadow-xl hover:shadow-emerald-300 transition-all btn-press disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+>
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
               ) : (
