@@ -131,7 +131,7 @@ if (profileRes.ok) {
             Better
           </>
         }
-        subtitle="Track your reports, see the impact you're creating, and connect with fellow citizens working towards cleaner communities."
+        subtitle="Track your reports, see the impact you are creating, and connect with fellow citizens working towards cleaner communities."
         stats={stats}
       >
         <AuthFormCard
