@@ -1,11 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState ,useMemo } from 'react';
 
 // --- Icons (Lucide React) ---
 import {
-  Menu, LayoutDashboard, LineChart, Settings, User, ClipboardEdit, Map,
+  Menu, LayoutDashboard, Settings, User, ClipboardEdit, Map,
   AlertTriangle, Clock, CheckCircle, Users, Bell,
-  ArrowLeft, Calendar, MapPin, FileText, Image, MessageSquare, PlusCircle,  Activity
+  ArrowLeft, Calendar, MapPin, FileText, Image, MessageSquare, PlusCircle,  Activity,Search,Pencil,Trash2, UserCog
 } from 'lucide-react';
+
+
+
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  LineChart,
+  Line,
+  CartesianGrid,
+  Legend,
+} from "recharts";
+
+
+
 
 import L from "leaflet";
 const statusIcon = (status) =>
@@ -123,10 +144,24 @@ const reportedIssues = [
 
 // --- Users List (Worker / Volunteer / Admin) ---
 const usersList = [
-  { id: "U1", name: "Rohit Kumar", role: "Worker", email: "rohit@gmail.com" },
-  { id: "U2", name: "Neha Singh", role: "Volunteer", email: "neha@gmail.com" },
-  { id: "U3", name: "Amit Verma", role: "Admin", email: "amit@gmail.com" },
+  // --- Workers ---
+  { id: "U1", name: "Rohit Kumar", role: "Worker", email: "rohit@gmail.com", city: "Delhi" },
+  { id: "U4", name: "Vikas Sharma", role: "Worker", email: "vikas.worker@gmail.com", city: "Ghaziabad" },
+  { id: "U5", name: "Ankit Yadav", role: "Worker", email: "ankit.worker@gmail.com", city: "Noida" },
+  { id: "U6", name: "Suresh Singh", role: "Worker", email: "suresh.worker@gmail.com", city: "Delhi" },
+  { id: "U7", name: "Pooja Verma", role: "Worker", email: "pooja.worker@gmail.com", city: "Greater Noida" },
+
+  // --- Volunteers ---
+  { id: "U2", name: "Neha Singh", role: "Volunteer", email: "neha@gmail.com", city: "Noida" },
+  { id: "U8", name: "Aman Gupta", role: "Volunteer", email: "aman.volunteer@gmail.com", city: "Delhi" },
+  { id: "U9", name: "Simran Kaur", role: "Volunteer", email: "simran.volunteer@gmail.com", city: "Ghaziabad" },
+
+  // --- Admins ---
+  { id: "U3", name: "Amit Verma", role: "Admin", email: "amit@gmail.com", city: "Ghaziabad" },
+  { id: "U10", name: "Priya Mehta", role: "Admin", email: "priya.admin@gmail.com", city: "Delhi" },
 ];
+
+
 
 // --- Recent Activity Logs ---
 const recentActivityData = [
@@ -384,201 +419,576 @@ const IssueDetailView = ({ issue, onBack }) => {
  * Renders the Main Dashboard View.
  * @param {Function} onIssueClick - Callback when an issue row is clicked.
  */
+
 const DashboardView = ({
   onIssueClick,
   selectedIssue,
   setSelectedIssue,
   setView,
   issues,
-}) => (
+}) => {
+  // ================== STATISTICAL DATA (Auto from issues) ==================
+  const statusCount = issues.reduce(
+    (acc, issue) => {
+      acc[issue.status] = (acc[issue.status] || 0) + 1;
+      return acc;
+    },
+    { Pending: 0, "In Progress": 0, Resolved: 0 }
+  );
 
-  <main className="p-4 sm:p-6 space-y-6 flex-1">
-    {/* Main Title */}
-    <div className="mb-6">
-      <h2 className="text-2xl font-bold text-gray-800">CleanStreet Admin</h2>
-      <p className="text-gray-500">Monitor and resolve civic issues in real-time</p>
-    </div>
+  const priorityCount = issues.reduce(
+    (acc, issue) => {
+      acc[issue.priority] = (acc[issue.priority] || 0) + 1;
+      return acc;
+    },
+    { High: 0, Medium: 0, Low: 0 }
+  );
 
-    {/* KPI Cards (Key Metrics) - Responsive Grid */}
-    {/* KPI Cards */}
-<div className="grid grid-cols-1 md:grid-cols-2 grid-cols-4 xl:grid-cols-4 gap-6">
+  const typeCount = issues.reduce((acc, issue) => {
+    acc[issue.type] = (acc[issue.type] || 0) + 1;
+    return acc;
+  }, {});
 
-  {/* Pending */}
-  <div className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-4">
-    <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-      <AlertTriangle className="w-6 h-6 text-red-500" />
-    </div>
-    <div>
-      <p className="text-xs text-gray-500 uppercase">Pending Issues</p>
-      <p className="text-2xl font-bold text-gray-800">47</p>
-      <p className="text-xs text-red-500">+12 today</p>
-    </div>
-  </div>
+  const statusPieData = [
+    { name: "Pending", value: statusCount["Pending"] },
+    { name: "In Progress", value: statusCount["In Progress"] },
+    { name: "Resolved", value: statusCount["Resolved"] },
+  ];
 
-  {/* In Progress */}
-  <div className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-4">
-    <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
-      <Clock className="w-6 h-6 text-orange-500" />
-    </div>
-    <div>
-      <p className="text-xs text-gray-500 uppercase">In Progress</p>
-      <p className="text-2xl font-bold text-gray-800">23</p>
-      <p className="text-xs text-orange-500">+8 assigned</p>
-    </div>
-  </div>
+  const priorityBarData = [
+    { name: "High", value: priorityCount["High"] },
+    { name: "Medium", value: priorityCount["Medium"] },
+    { name: "Low", value: priorityCount["Low"] },
+  ];
 
-  {/* Resolved */}
-  <div className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-4">
-    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-      <CheckCircle className="w-6 h-6 text-green-500" />
-    </div>
-    <div>
-      <p className="text-xs text-gray-500 uppercase">Resolved</p>
-      <p className="text-2xl font-bold text-gray-800">156</p>
-      <p className="text-xs text-green-500">+18 this week</p>
-    </div>
-  </div>
+  const complaintTypesData = Object.keys(typeCount).map((key) => ({
+    name: key.length > 12 ? key.slice(0, 12) + "..." : key,
+    value: typeCount[key],
+  }));
 
-  {/* Active Citizens */}
-  <div className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-4">
-    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-      <Users className="w-6 h-6 text-blue-500" />
-    </div>
-    <div>
-      <p className="text-xs text-gray-500 uppercase">Active Citizens</p>
-      <p className="text-2xl font-bold text-gray-800">1234</p>
-      <p className="text-xs text-blue-500">+45 this month</p>
-    </div>
-  </div>
+  // (Demo) weekly trend
+  const weeklyTrend = [
+    { day: "Mon", complaints: 3 },
+    { day: "Tue", complaints: 6 },
+    { day: "Wed", complaints: 4 },
+    { day: "Thu", complaints: 8 },
+    { day: "Fri", complaints: 5 },
+    { day: "Sat", complaints: 2 },
+    { day: "Sun", complaints: 7 },
+  ];
 
-</div>
-  
-    {/* Reports and Map Layout - Responsive Column/Row Switch */}
-    <div className="grid grid-cols-12 gap-6">
-      {/* Left Column: Reported Issues Table (Span 12 on mobile, 7 on desktop) */}
-      <div className="col-span-7 bg-white p-5 rounded-xl shadow-lg">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold text-gray-700">Latest Reported Issues</h3>
-          <button
-           onClick={() => setView("reported")}
-           className="text-sm bg-[#B77A4D] text-white px-3 py-1 rounded-full hover:bg-[#A36C40] transition"
-          >
-          View All
-       </button>
+  // (Demo) avg response time
+  const avgResponseTimeData = [
+    { name: "Pending", hrs: 48 },
+    { name: "In Progress", hrs: 18 },
+    { name: "Resolved", hrs: 10 },
+  ];
+
+  const COLORS = ["#ef4444", "#f59e0b", "#22c55e", "#3b82f6", "#a855f7"];
+
+  // ================== UI ==================
+  return (
+    <main className="p-4 sm:p-6 space-y-6 flex-1">
+      {/* Main Title */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">CleanStreet Admin</h2>
+        <p className="text-gray-500">
+          Monitor and resolve civic issues in real-time
+        </p>
+      </div>
+
+      {/* KPI Cards */} 
+      <div className="grid grid-cols-1 md:grid-cols-2 grid-cols-4 xl:grid-cols-4 gap-6">
+
+      {/* Pending */}
+        <div className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+            <AlertTriangle className="w-6 h-6 text-red-500" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 uppercase">Pending Issues</p>
+            <p className="text-2xl font-bold text-gray-800">
+              {statusCount["Pending"]}
+            </p>
+            <p className="text-xs text-red-500">Live</p>
+          </div>
         </div>
 
-        {/* Table Container for overflow on small screens */}
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b text-gray-500 uppercase tracking-wider text-left bg-gray-50">
-                <th className="py-3 px-2 font-medium">ID</th>
-                <th className="py-3 px-2 font-medium">Issue Type</th>
-                <th className="py-3 px-2 font-medium">Location</th>
-                <th className="py-3 px-2 font-medium">Reporter</th>
-                <th className="py-3 px-2 font-medium">Date</th>
+        {/* In Progress */}
+        <div className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
+            <Clock className="w-6 h-6 text-orange-500" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 uppercase">In Progress</p>
+            <p className="text-2xl font-bold text-gray-800">
+              {statusCount["In Progress"]}
+            </p>
+            <p className="text-xs text-orange-500">Live</p>
+          </div>
+        </div>
 
-                <th className="py-3 px-2 font-medium">Priority</th>
-              </tr>
-            </thead>
-            <tbody>
-              {issues.map((issue, index) => (
-                <tr 
-                  key={index} 
-                  className="border-b last:border-b-0 text-gray-700 hover:bg-gray-100 cursor-pointer transition duration-150"
-                  // ON CLICK INTEGRATION: Open the detail view
-                  onClick={() => onIssueClick(issue)}
-                >
-                  <td className="py-3 px-2 font-semibold">{issue.id}</td>
-                  <td className="py-3 px-2">{issue.type}</td>
-                  <td className="py-3 px-2 text-xs">{issue.location}</td>
-                  <td className="py-3 px-2">{issue.reporter}</td>
-                  <td className="py-3 px-2">{issue.date}</td>
-                  <td className="py-3 px-2">
-                    <span className={`inline-block px-3 py-1 text-xs font-bold rounded-full shadow-inner ${getPriorityColor(issue.priority)}`}>
-                      {issue.priority}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Resolved */}
+        <div className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+            <CheckCircle className="w-6 h-6 text-green-500" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 uppercase">Resolved</p>
+            <p className="text-2xl font-bold text-gray-800">
+              {statusCount["Resolved"]}
+            </p>
+            <p className="text-xs text-green-500">Live</p>
+          </div>
+        </div>
+
+        {/* Active Citizens (Static) */}
+        <div className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+            <Users className="w-6 h-6 text-blue-500" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 uppercase">Active Citizens</p>
+            <p className="text-2xl font-bold text-gray-800">1234</p>
+            <p className="text-xs text-blue-500">+45 this month</p>
+          </div>
         </div>
       </div>
 
-      {/* Right Column: Map View (Span 12 on mobile, 5 on desktop) */}
-      <div className="col-span-5 bg-white p-5 rounded-xl shadow-lg flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold text-gray-700">Real-Time Issue Map</h3>
-          {/* Map Refresh Icon */}
-          <div className="bg-gray-100 rounded-full p-2 cursor-pointer hover:bg-gray-200 transition duration-300 transform hover:rotate-45">
-            <span role="img" aria-label="refresh">🔄</span>
+      {/* Reports and Map Layout */}
+      <div className="grid grid-cols-12 gap-6">
+        {/* Left Column: Reported Issues Table */}
+        <div className="col-span-7 bg-white p-5 rounded-xl shadow-lg">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold text-gray-700">
+              Latest Reported Issues
+            </h3>
+            <button
+              onClick={() => setView("reported")}
+              className="text-sm bg-[#B77A4D] text-white px-3 py-1 rounded-full hover:bg-[#A36C40] transition"
+            >
+              View All
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b text-gray-500 uppercase tracking-wider text-left bg-gray-50">
+                  <th className="py-3 px-2 font-medium">ID</th>
+                  <th className="py-3 px-2 font-medium">Issue Type</th>
+                  <th className="py-3 px-2 font-medium">Location</th>
+                  <th className="py-3 px-2 font-medium">Reporter</th>
+                  <th className="py-3 px-2 font-medium">Date</th>
+                  <th className="py-3 px-2 font-medium">Priority</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {issues.map((issue, index) => (
+                  <tr
+                    key={index}
+                    className="border-b last:border-b-0 text-gray-700 hover:bg-gray-100 cursor-pointer transition duration-150"
+                    onClick={() => onIssueClick(issue)}
+                  >
+                    <td className="py-3 px-2 font-semibold">{issue.id}</td>
+                    <td className="py-3 px-2">{issue.type}</td>
+                    <td className="py-3 px-2 text-xs">{issue.location}</td>
+                    <td className="py-3 px-2">{issue.reporter}</td>
+                    <td className="py-3 px-2">{issue.date}</td>
+                    <td className="py-3 px-2">
+                      <span
+                        className={`inline-block px-3 py-1 text-xs font-bold rounded-full shadow-inner ${getPriorityColor(
+                          issue.priority
+                        )}`}
+                      >
+                        {issue.priority}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-        
-        {/* Actual Map Area */}
-        <div className="relative flex-1 min-h-[360px]">
-  <MapContainer
-  center={
-    selectedIssue
-      ? [selectedIssue.lat, selectedIssue.lng]
-      : [28.6139, 77.2090]
+
+        {/* Right Column: Map View */}
+        <div className="col-span-5 bg-white p-5 rounded-xl shadow-lg flex flex-col">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold text-gray-700">
+              Real-Time Issue Map
+            </h3>
+            <div className="bg-gray-100 rounded-full p-2 cursor-pointer hover:bg-gray-200 transition duration-300 transform hover:rotate-45">
+              <span role="img" aria-label="refresh">
+                🔄
+              </span>
+            </div>
+          </div>
+
+          <div className="relative flex-1 min-h-[360px]">
+            <MapContainer
+              center={
+                selectedIssue
+                  ? [selectedIssue.lat, selectedIssue.lng]
+                  : [28.6139, 77.2090]
+              }
+              zoom={selectedIssue ? 14 : 11}
+              className="w-full h-full rounded-lg"
+            >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution="© OpenStreetMap"
+              />
+
+              {issues.map((issue) => (
+                <Marker
+                  key={issue.id}
+                  position={[issue.lat, issue.lng]}
+                  icon={statusIcon(issue.status)}
+                  eventHandlers={{
+                    click: () => onIssueClick(issue),
+                  }}
+                >
+                  <Popup>
+                    <b>{issue.type}</b>
+                    <br />
+                    {issue.location}
+                    <br />
+                    Priority: {issue.priority}
+                    <br />
+                    Status: {issue.status}
+                  </Popup>
+                </Marker>
+              ))}
+            </MapContainer>
+
+            {/* Legend */}
+            <div className="absolute bottom-4 left-4 bg-white p-3 rounded-xl shadow text-sm z-[1000]">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-red-500 rounded-full" /> Pending
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-orange-500 rounded-full" /> In
+                Progress
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-green-500 rounded-full" /> Resolved
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ================== STATISTICAL ANALYTICS (6 CHARTS) ================== */}
+      <div className="bg-white p-5 rounded-xl shadow-lg">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-semibold text-gray-700">
+            Statistical Analytics
+          </h3>
+          <span className="text-xs text-gray-400">
+            Auto calculated from issues
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {/* 1) Status Pie */}
+          <div className="bg-gray-50 rounded-xl p-4">
+            <p className="text-sm font-semibold text-gray-700 mb-2">
+              Complaint Status
+            </p>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={statusPieData}
+                    dataKey="value"
+                    nameKey="name"
+                    outerRadius={80}
+                  >
+                    {statusPieData.map((_, idx) => (
+                      <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* 2) Priority Bar */}
+          <div className="bg-gray-50 rounded-xl p-4">
+            <p className="text-sm font-semibold text-gray-700 mb-2">
+              Priority Distribution
+            </p>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={priorityBarData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="#B77A4D" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* 3) Complaint Types Pie */}
+          <div className="bg-gray-50 rounded-xl p-4">
+            <p className="text-sm font-semibold text-gray-700 mb-2">
+              Complaint Types
+            </p>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={complaintTypesData}
+                    dataKey="value"
+                    nameKey="name"
+                    outerRadius={80}
+                  >
+                    {complaintTypesData.map((_, idx) => (
+                      <Cell
+                        key={idx}
+                        fill={COLORS[(idx + 1) % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* 4) Weekly Trend Line */}
+          <div className="bg-gray-50 rounded-xl p-4">
+            <p className="text-sm font-semibold text-gray-700 mb-2">
+              Weekly Complaints Trend
+            </p>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={weeklyTrend}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="day" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Line
+  type="monotone"
+  dataKey="complaints"
+  stroke="#B77A4D"
+  strokeWidth={3}
+  dot={{ r: 4 }}
+/>
+
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* 5) Avg Response Time Bar */}
+          <div className="bg-gray-50 rounded-xl p-4">
+            <p className="text-sm font-semibold text-gray-700 mb-2">
+              Avg Response Time (hrs)
+            </p>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={avgResponseTimeData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="hrs" fill="#A36C40" radius={[8, 8, 0, 0]} />
+
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* 6) Quick Summary */}
+          <div className="bg-gray-50 rounded-xl p-4">
+            <p className="text-sm font-semibold text-gray-700 mb-2">
+              Quick Summary
+            </p>
+
+            <div className="mt-6 space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Total Complaints</span>
+                <span className="font-bold text-gray-800">{issues.length}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-gray-600">High Priority</span>
+                <span className="font-bold text-gray-800">
+                  {priorityCount["High"]}
+                </span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-gray-600">Resolved Rate</span>
+                <span className="font-bold text-gray-800">
+                  {issues.length === 0
+                    ? "0%"
+                    : Math.round((statusCount["Resolved"] / issues.length) * 100) +
+                      "%"}
+                </span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-gray-600">Pending Rate</span>
+                <span className="font-bold text-gray-800">
+                  {issues.length === 0
+                    ? "0%"
+                    : Math.round((statusCount["Pending"] / issues.length) * 100) +
+                      "%"}
+                </span>
+              </div>
+
+              <div className="pt-3 border-t text-xs text-gray-500">
+                * Summary auto calculated from current issues list
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* ================== END ANALYTICS ================== */}
+    </main>
+  );
+};
+
+const AllReportedIssuesView = ({ onIssueClick, issues, users, setIssues, addActivity }) => {
+
+  // sirf Worker dropdown me show honge
+  const workers = users.filter((u) => u.role === "Worker");
+
+  // ===================== SEARCH + FILTER STATES =====================
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL"); // ALL | Pending | In Progress | Resolved
+
+  // ===================== ASSIGN / RESOLVE / REOPEN =====================
+  const handleAssign = (issueId, workerName) => {
+  setIssues((prev) =>
+    prev.map((issue) =>
+      issue.id === issueId
+        ? {
+            ...issue,
+            assignedTo: workerName,
+            status:
+              workerName && issue.status === "Pending"
+                ? "In Progress"
+                : issue.status,
+          }
+        : issue
+    )
+  );
+
+  if (workerName) {
+    addActivity(
+      "Worker Assigned",
+      `Issue ${issueId} assigned to ${workerName}`,
+      "assign"
+    );
   }
-  zoom={selectedIssue ? 14 : 11}
-  className="w-full h-full rounded-lg"
->
-  <TileLayer
-    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-    attribution="© OpenStreetMap"
-  />
-
-  {issues.map((issue) => (
-    <Marker
-      key={issue.id}
-      position={[issue.lat, issue.lng]}
-      icon={statusIcon(issue.status)}
-      eventHandlers={{
-        click: () => onIssueClick(issue),
-      }}
-    >
-      <Popup>
-        <b>{issue.type}</b><br />
-        {issue.location}<br />
-        Priority: {issue.priority}<br />
-        Status: {issue.status}
-      </Popup>
-    </Marker>
-  ))}
-</MapContainer>
+};
 
 
-  {/* Legend */}
-  <div className="absolute bottom-4 left-4 bg-white p-3 rounded-xl shadow text-sm z-[1000]">
-    <div className="flex items-center gap-2">
-      <span className="w-3 h-3 bg-red-500 rounded-full" /> Pending
-    </div>
-    <div className="flex items-center gap-2">
-      <span className="w-3 h-3 bg-orange-500 rounded-full" /> In Progress
-    </div>
-    <div className="flex items-center gap-2">
-      <span className="w-3 h-3 bg-green-500 rounded-full" /> Resolved
-    </div>
-    </div>
-    </div>
-    </div>
-    </div>
-    
-  </main>
-);
+  const handleResolve = (issueId) => {
+  setIssues((prev) =>
+    prev.map((issue) =>
+      issue.id === issueId ? { ...issue, status: "Resolved" } : issue
+    )
+  );
 
-const AllReportedIssuesView = ({ onIssueClick, issues }) => {
+  addActivity("Issue Resolved", `Issue ${issueId} marked as Resolved`, "resolved");
+};
+
+
+ const handleReopen = (issueId) => {
+  setIssues((prev) =>
+    prev.map((issue) =>
+      issue.id === issueId ? { ...issue, status: "Pending" } : issue
+    )
+  );
+
+  addActivity("Issue Reopened", `Issue ${issueId} reopened by admin`, "status");
+};
+
+
+  // ===================== FILTER DATA =====================
+  const filteredIssues = useMemo(() => {
+    let data = [...issues];
+
+    // Search
+    if (searchTerm.trim() !== "") {
+      const q = searchTerm.toLowerCase();
+      data = data.filter((issue) => {
+        return (
+          (issue.id || "").toLowerCase().includes(q) ||
+          (issue.type || "").toLowerCase().includes(q) ||
+          (issue.location || "").toLowerCase().includes(q) ||
+          (issue.reporter || "").toLowerCase().includes(q)
+        );
+      });
+    }
+
+    // Status Filter
+    if (statusFilter !== "ALL") {
+      data = data.filter((issue) => issue.status === statusFilter);
+    }
+
+    return data;
+  }, [issues, searchTerm, statusFilter]);
+
+  // ===================== UI =====================
   return (
     <main className="p-4 sm:p-6 space-y-6 flex-1">
-      <div className="mb-6">
+      <div className="mb-4">
         <h2 className="text-2xl font-bold text-gray-800">All Reported Issues</h2>
         <p className="text-gray-500">View and manage all complaints</p>
       </div>
 
+    {/* ✅ SEARCH + STATUS FILTER (ONE LINE FIXED) */}
+<div className="bg-white p-5 rounded-xl shadow-lg">
+  <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
+    
+    {/* Search */}
+    <div className="sm:col-span-9">
+      <p className="text-xs font-semibold text-gray-600 mb-2">Search</p>
+
+      <input
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        placeholder="Search by ID, type, location, reporter..."
+        className="w-full border px-3 py-2 rounded-lg text-sm bg-gray-50"
+      />
+
+      <p className="text-xs text-gray-400 mt-2">
+        Showing {filteredIssues.length} of {issues.length} issues
+      </p>
+    </div>
+
+    {/* Status */}
+    <div className="sm:col-span-3">
+      <p className="text-xs font-semibold text-gray-600 mb-2">Status</p>
+
+      <select
+        value={statusFilter}
+        onChange={(e) => setStatusFilter(e.target.value)}
+        className="w-full border px-3 py-2 rounded-lg text-sm bg-gray-50"
+      >
+        <option value="ALL">ALL</option>
+        <option value="Pending">Pending</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Resolved">Resolved</option>
+      </select>
+    </div>
+
+  </div>
+</div>
+
+
+      {/* ✅ TABLE */}
       <div className="bg-white p-5 rounded-xl shadow-lg">
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
@@ -590,21 +1000,45 @@ const AllReportedIssuesView = ({ onIssueClick, issues }) => {
                 <th className="py-3 px-2 font-medium">Reporter</th>
                 <th className="py-3 px-2 font-medium">Date</th>
                 <th className="py-3 px-2 font-medium">Status</th>
-                <th className="py-3 px-2 font-medium">Priority</th>
+                <th className="py-3 px-2 font-medium">Assign To</th>
+                <th className="py-3 px-2 font-medium text-right">Action</th>
               </tr>
             </thead>
 
             <tbody>
-              {issues.map((issue) => (
+              {filteredIssues.map((issue) => (
                 <tr
                   key={issue.id}
-                  className="border-b last:border-b-0 text-gray-700 hover:bg-gray-100 cursor-pointer transition"
-                  onClick={() => onIssueClick(issue)}
+                  className="border-b last:border-b-0 text-gray-700 hover:bg-gray-50 transition"
                 >
-                  <td className="py-3 px-2 font-semibold">{issue.id}</td>
-                  <td className="py-3 px-2">{issue.type}</td>
-                  <td className="py-3 px-2 text-xs">{issue.location}</td>
-                  <td className="py-3 px-2">{issue.reporter}</td>
+                  <td
+                    className="py-3 px-2 font-semibold cursor-pointer"
+                    onClick={() => onIssueClick(issue)}
+                  >
+                    {issue.id}
+                  </td>
+
+                  <td
+                    className="py-3 px-2 cursor-pointer"
+                    onClick={() => onIssueClick(issue)}
+                  >
+                    {issue.type}
+                  </td>
+
+                  <td
+                    className="py-3 px-2 text-xs cursor-pointer"
+                    onClick={() => onIssueClick(issue)}
+                  >
+                    {issue.location}
+                  </td>
+
+                  <td
+                    className="py-3 px-2 cursor-pointer"
+                    onClick={() => onIssueClick(issue)}
+                  >
+                    {issue.reporter}
+                  </td>
+
                   <td className="py-3 px-2">{issue.date}</td>
 
                   <td className="py-3 px-2">
@@ -617,17 +1051,51 @@ const AllReportedIssuesView = ({ onIssueClick, issues }) => {
                     </span>
                   </td>
 
+                  {/* Assign To */}
                   <td className="py-3 px-2">
-                    <span
-                      className={`inline-block px-3 py-1 text-xs font-bold rounded-full ${getPriorityColor(
-                        issue.priority
-                      )}`}
+                    <select
+                      value={issue.assignedTo || ""}
+                      onChange={(e) => handleAssign(issue.id, e.target.value)}
+                      className="border px-3 py-2 rounded-lg text-sm bg-white w-44"
+                      disabled={issue.status === "Resolved"}
                     >
-                      {issue.priority}
-                    </span>
+                      <option value="">Select Worker</option>
+                      {workers.map((w) => (
+                        <option key={w.id} value={w.name}>
+                          {w.name}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+
+                  {/* Action */}
+                  <td className="py-3 px-2 text-right">
+                    {issue.status !== "Resolved" ? (
+                      <button
+                        onClick={() => handleResolve(issue.id)}
+                        className="px-3 py-1 rounded-lg text-xs bg-green-600 text-white hover:bg-green-700"
+                      >
+                        Resolve
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleReopen(issue.id)}
+                        className="px-3 py-1 rounded-lg text-xs bg-orange-500 text-white hover:bg-orange-600"
+                      >
+                        Reopen
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
+
+              {filteredIssues.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="py-6 text-center text-gray-500">
+                    No issues found
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -635,6 +1103,7 @@ const AllReportedIssuesView = ({ onIssueClick, issues }) => {
     </main>
   );
 };
+
 
 const RecentActivityView = ({ activities }) => {
   const getBadge = (type) => {
@@ -647,19 +1116,23 @@ const RecentActivityView = ({ activities }) => {
         return "bg-purple-100 text-purple-700";
       case "resolved":
         return "bg-green-100 text-green-700";
+      case "user":
+      return "bg-red-100 text-red-700";
       default:
         return "bg-gray-100 text-gray-700";
     }
   };
 
   return (
-    <main className="p-4 sm:p-6 space-y-6 flex-1">
-      <div className="mb-6">
+    <main className="p-4 sm:p-6 space-y-6 flex-1 w-full">
+      {/* Header */}
+      <div className="mb-4">
         <h2 className="text-2xl font-bold text-gray-800">Recent Activity</h2>
         <p className="text-gray-500">Latest updates and actions in the system</p>
       </div>
 
-      <div className="bg-white p-5 rounded-xl shadow-lg">
+      {/* Full width Card */}
+      <div className="bg-white p-5 rounded-xl shadow-lg w-full">
         <div className="space-y-4">
           {activities.map((item) => (
             <div
@@ -667,7 +1140,7 @@ const RecentActivityView = ({ activities }) => {
               className="flex items-start justify-between gap-4 border-b last:border-b-0 pb-4 last:pb-0"
             >
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
                   <Activity className="w-5 h-5 text-gray-600" />
                 </div>
 
@@ -692,131 +1165,220 @@ const RecentActivityView = ({ activities }) => {
     </main>
   );
 };
-
-
-
 // --- Manage Users View (Assign issue from here) ---
 const ManageUsersView = ({
-  issues,
   users,
-  onAssign,
-  onUnassign,
   onDeleteUser,
   onEditUser,
-  onAddUser,
 }) => {
-  const [selectedIssueId, setSelectedIssueId] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState("ALL");
+  const [cityFilter, setCityFilter] = useState("ALL");
+  const [openActionUserId, setOpenActionUserId] = useState(null);
+
+  // Cities dropdown from users
+  const cities = Array.from(new Set(users.map((u) => u.city).filter(Boolean)));
+
+  // Filter logic
+  const filteredUsers = users.filter((user) => {
+    const name = (user.name || "").toLowerCase();
+    const email = (user.email || "").toLowerCase();
+    const city = (user.city || "").toLowerCase();
+
+    const searchOk =
+      name.includes(searchTerm.toLowerCase()) ||
+      email.includes(searchTerm.toLowerCase()) ||
+      city.includes(searchTerm.toLowerCase());
+
+    const roleOk = roleFilter === "ALL" ? true : user.role === roleFilter;
+    const cityOk = cityFilter === "ALL" ? true : user.city === cityFilter;
+
+    return searchOk && roleOk && cityOk;
+  });
+
+  // Role pill color
+  const getRoleBadge = (role) => {
+    if (role === "Admin") return "bg-purple-100 text-purple-700";
+    if (role === "Volunteer") return "bg-blue-100 text-blue-700";
+    if (role === "Worker") return "bg-orange-100 text-orange-700";
+    return "bg-gray-100 text-gray-700";
+  };
+
+  // Role update (cycle)
+  const getNextRole = (currentRole) => {
+    const roles = ["User", "Volunteer", "Admin", "Worker"];
+    const idx = roles.indexOf(currentRole);
+    return roles[(idx + 1) % roles.length];
+  };
+
+  const handleRoleChange = (user) => {
+    const updatedUser = { ...user, role: getNextRole(user.role) };
+    onEditUser(updatedUser); // parent will handle update
+    setOpenActionUserId(null);
+  };
 
   return (
     <main className="p-4 sm:p-6 space-y-6 flex-1">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Manage Users</h2>
-        <p className="text-gray-500">
-          Assign reported issues to Worker / Volunteer / Admin
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <Users className="w-6 h-6 text-gray-700" />
+          User Management
+        </h2>
+        <p className="text-gray-500 text-sm">
+          Manage and filter user accounts
         </p>
       </div>
 
-      {/* Select Issue */}
-      <div className="bg-white p-4 rounded-xl shadow-lg flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <p className="text-sm font-semibold text-gray-700">Select Issue:</p>
+      {/* Filters (ONE LINE) */}
+      <div className="bg-white p-5 rounded-xl shadow-lg">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+          {/* Search */}
+          <div className="lg:col-span-6">
+            <p className="text-xs font-semibold text-gray-600 mb-2">
+              Search Users
+            </p>
+            <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-gray-50">
+              <Search className="w-4 h-4 text-gray-400" />
+              <input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by name, email, or location..."
+                className="w-full bg-transparent outline-none text-sm"
+              />
+            </div>
+            <p className="text-xs text-gray-400 mt-2">
+              Showing {filteredUsers.length} of {users.length} users
+            </p>
+          </div>
 
-        <select
-          value={selectedIssueId}
-          onChange={(e) => setSelectedIssueId(e.target.value)}
-          className="border px-3 py-2 rounded-lg text-sm w-full sm:w-96"
-        >
-          <option value="">-- Choose an Issue --</option>
-          {issues.map((issue) => (
-            <option key={issue.id} value={issue.id}>
-              {issue.id} - {issue.type} ({issue.status})
-            </option>
-          ))}
-        </select>
+          {/* Role Filter */}
+          <div className="lg:col-span-3">
+            <p className="text-xs font-semibold text-gray-600 mb-2">
+              Filter by Role
+            </p>
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="w-full border px-3 py-2 rounded-lg text-sm bg-gray-50"
+            >
+              <option value="ALL">ALL</option>
+              <option value="User">User</option>
+              <option value="Worker">Worker</option>
+              <option value="Volunteer">Volunteer</option>
+              <option value="Admin">Admin</option>
+            </select>
+          </div>
+
+          {/* City Filter */}
+          <div className="lg:col-span-3">
+            <p className="text-xs font-semibold text-gray-600 mb-2">
+              Filter by City
+            </p>
+            <select
+              value={cityFilter}
+              onChange={(e) => setCityFilter(e.target.value)}
+              className="w-full border px-3 py-2 rounded-lg text-sm bg-gray-50"
+            >
+              <option value="ALL">ALL</option>
+              {cities.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
-      {/* Users Table */}
+      {/* Table */}
       <div className="bg-white p-5 rounded-xl shadow-lg">
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
-           <tr className="border-b text-gray-500 uppercase tracking-wider text-left bg-gray-50">
-           <th className="py-3 px-2 font-medium">User ID</th>
-           <th className="py-3 px-2 font-medium">Name</th>
-          <th className="py-3 px-2 font-medium">Role</th>
-          <th className="py-3 px-2 font-medium">Email</th>
-          <th className="py-3 px-2 font-medium">Actions</th>
-          <th className="py-3 px-2 font-medium">Assign To</th>
-           <th className="py-3 px-2 font-medium">Assign</th>
-          </tr>
-         </thead>
+              <tr className="border-b text-gray-500 uppercase tracking-wider text-left bg-gray-50">
+                <th className="py-3 px-3 font-medium">Name</th>
+                <th className="py-3 px-3 font-medium">Email</th>
+                <th className="py-3 px-3 font-medium">City</th>
+                <th className="py-3 px-3 font-medium">Role</th>
+                <th className="py-3 px-3 font-medium text-right">Actions</th>
+              </tr>
+            </thead>
 
             <tbody>
-  {users.map((user) => (
-    <tr key={user.id} className="border-b text-gray-700">
-      <td className="py-3 px-2 font-semibold">{user.id}</td>
-      <td className="py-3 px-2">{user.name}</td>
-      <td className="py-3 px-2">{user.role}</td>
-      <td className="py-3 px-2 text-blue-600">{user.email}</td>
+              {filteredUsers.map((user) => (
+                <tr
+                  key={user.id}
+                  className="border-b last:border-b-0 text-gray-700 hover:bg-gray-50 transition"
+                >
+                  <td className="py-3 px-3 font-semibold">{user.name}</td>
 
-      {/* Actions Column */}
-      <td className="py-3 px-2">
-        <div className="flex gap-2">
-          <button
-            onClick={() => onEditUser(user)}
-            className="px-3 py-1 rounded-lg text-xs bg-blue-500 text-white hover:bg-blue-600"
-          >
-            Edit
-          </button>
+                  <td className="py-3 px-3 text-blue-600">{user.email}</td>
 
-          <button
-            onClick={() => onDeleteUser(user.id)}
-            className="px-3 py-1 rounded-lg text-xs bg-red-500 text-white hover:bg-red-600"
-          >
-            Delete
-          </button>
-        </div>
-      </td>
+                  <td className="py-3 px-3">{user.city || "N/A"}</td>
 
-      {/* Assign To Column */}
-      <td className="py-3 px-2">
-        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-          {user.role}
-        </span>
-      </td>
+                  <td className="py-3 px-3">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleBadge(
+                        user.role
+                      )}`}
+                    >
+                      {user.role}
+                    </span>
+                  </td>
 
-      {/* Assign Column */}
-      <td className="py-3 px-2">
-        <div className="flex gap-2">
-          <button
-            disabled={!selectedIssueId}
-            onClick={() => onAssign(selectedIssueId, user)}
-            className={`px-3 py-1 rounded-lg text-xs text-white ${
-              selectedIssueId
-                ? "bg-[#B77A4D] hover:bg-[#A36C40]"
-                : "bg-gray-400 cursor-not-allowed"
-            }`}
-          >
-            Assign Issue
-          </button>
+                  {/* Actions last */}
+                  <td className="py-3 px-3 text-right relative">
+                    <button
+                      onClick={() =>
+                        setOpenActionUserId(
+                          openActionUserId === user.id ? null : user.id
+                        )
+                      }
+                      className="p-2 rounded-full hover:bg-gray-100 transition"
+                      title="Actions"
+                    >
+                      <Pencil className="w-4 h-4 text-gray-600" />
+                    </button>
 
-          <button
-            disabled={!selectedIssueId}
-            onClick={() => onUnassign(selectedIssueId)}
-            className={`px-3 py-1 rounded-lg text-xs text-white ${
-              selectedIssueId
-                ? "bg-gray-600 hover:bg-gray-700"
-                : "bg-gray-400 cursor-not-allowed"
-            }`}
-          >
-            Unassign
-          </button>
-        </div>
-      </td>
-    </tr>
-  ))}
-</tbody>
+                    {/* Dropdown */}
+                    {openActionUserId === user.id && (
+                      <div className="absolute right-3 mt-2 w-44 bg-white border rounded-xl shadow-lg z-50 overflow-hidden">
+                        <button
+                          onClick={() => handleRoleChange(user)}
+                          className="w-full flex items-center gap-2 px-4 py-3 text-sm hover:bg-gray-50 text-left"
+                        >
+                          <UserCog className="w-4 h-4 text-gray-600" />
+                          Change Role
+                        </button>
 
+                        <button
+                          onClick={() => {
+                            onDeleteUser(user.id);
+                            setOpenActionUserId(null);
+                          }}
+                          className="w-full flex items-center gap-2 px-4 py-3 text-sm hover:bg-red-50 text-left text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete User
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
 
+              {filteredUsers.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="py-6 text-center text-gray-500 text-sm"
+                  >
+                    No users found
+                  </td>
+                </tr>
+              )}
+            </tbody>
           </table>
         </div>
       </div>
@@ -862,6 +1424,19 @@ const [issues, setIssues] = useState(
     setSelectedIssue(null);
     setView('dashboard');
   };
+
+  const addActivity = (title, description, type = "new") => {
+  const newLog = {
+    id: Date.now(),
+    title,
+    description,
+    time: "Just now",
+    type, // assign | status | new | resolved | user
+  };
+
+  setActivities((prev) => [newLog, ...prev]);
+};
+
   // ✅ Assign issue to user
 const assignIssueToUser = (issueId, user) => {
   setIssues((prev) =>
@@ -876,7 +1451,14 @@ const assignIssueToUser = (issueId, user) => {
         : issue
     )
   );
+
+  addActivity(
+    "Issue Assigned",
+    `Issue ${issueId} assigned to ${user.name} (${user.role})`,
+    "assign"
+  );
 };
+
 
 const unassignIssue = (issueId) => {
   setIssues((prev) =>
@@ -969,26 +1551,40 @@ return (
       )}
 
       {view === "reported" && (
-        <AllReportedIssuesView
-        onIssueClick={handleIssueClick}
-        issues={issues}
-      />
+  <AllReportedIssuesView
+    onIssueClick={handleIssueClick}
+    issues={issues}
+    users={users}
+    setIssues={setIssues}
+    addActivity={addActivity}
+  />
+)}
 
-      )}
+
 
       {view === "users" && (
   <ManageUsersView
-    issues={issues}
     users={users}
-    onAssign={assignIssueToUser}
-    onUnassign={unassignIssue}
-    onDeleteUser={(userId) =>
-      setUsers((prev) => prev.filter((u) => u.id !== userId))
+    onDeleteUser={(userId) => {
+  const user = users.find((u) => u.id === userId);
+
+  setUsers((prev) => prev.filter((u) => u.id !== userId));
+
+  addActivity(
+    "User Deleted",
+    `User ${user?.name || userId} removed from system`,
+    "user"
+  );
+}}
+
+    onEditUser={(updatedUser) =>
+      setUsers((prev) =>
+        prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
+      )
     }
-    onEditUser={(user) => alert("Edit user: " + user.name)}
-    onAddUser={() => alert("Add User Form Open")}
   />
 )}
+
 
 {view === "activity" && (
   <RecentActivityView activities={activities} />
