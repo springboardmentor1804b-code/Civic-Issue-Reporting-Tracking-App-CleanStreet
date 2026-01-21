@@ -148,19 +148,19 @@ export default function Dashboard() {
       try {
         const res = await fetch(`${BACKEND}/api/admin-logs`, { headers });
         const logs = await res.json();
-        console.log('Raw logs:', logs);
 
         if (Array.isArray(logs)) {
           const validLogs = logs.filter(log => {
-            return (
-              log &&
-              log._id &&
-              log.action &&
-              typeof log.action === 'string' &&
-              !log.action.includes('ArrayBinary')
-            );
+
+            if (!log || !log.action || typeof log.action !== 'string') return false;
+
+            const lower = log.action.toLowerCase();
+
+            const isIssueRelated = lower.includes('issue');
+
+            return !log.action.includes('ArrayBinary') && isIssueRelated;
           });
-          console.log('Valid logs:', validLogs);
+
           setActivities(validLogs);
         } else {
           setActivities([]);
