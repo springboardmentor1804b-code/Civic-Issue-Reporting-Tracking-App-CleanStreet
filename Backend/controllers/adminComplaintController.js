@@ -1,27 +1,40 @@
 
 const Issue = require("../models/issueModel");
 const AdminActivity = require("../models/adminActivityModel");
+const PDFDocument = require("pdfkit");
+const { Document, Packer, Paragraph } = require("docx");
 
-// GET all complaints
+/**
+ * GET all complaints (Admin only, Filter aware)
+ * Filters: status, issueType
+ */
 exports.getAllComplaints = async (req, res) => {
   try {
     if (req.user.role !== "Admin") {
       return res.status(403).json({ error: "Access denied" });
     }
 
-    const complaints = await Issue.find()
+    const { status, issueType } = req.query;
+
+    const filter = {};
+    if (status) filter.status = status;
+    if (issueType) filter.issueType = issueType;
+
+    const complaints = await Issue.find(filter)
       .populate("reportedBy", "name")
       .populate("assignedTo", "name")
-      .select("description address category status assignedTo reportedBy createdAt")
       .sort({ createdAt: -1 });
 
     res.json(complaints);
   } catch (err) {
+    console.error("Get complaints error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
 
-//  UPDATE complaint status (Resolve / In Progress / Pending)
+/**
+ * UPDATE complaint status (Admin only)
+ */
 exports.updateComplaintStatus = async (req, res) => {
   try {
     if (req.user.role !== "Admin") {
@@ -38,7 +51,7 @@ exports.updateComplaintStatus = async (req, res) => {
     complaint.status = status;
     await complaint.save();
 
-    // LOG ADMIN ACTIVITY (IMPORTANT PART)
+    // Log admin activity
     await AdminActivity.create({
       admin: req.user.userId,
       action: `Changed complaint status to ${status}`,
@@ -49,7 +62,90 @@ exports.updateComplaintStatus = async (req, res) => {
 
     res.json({ message: "Status updated successfully" });
   } catch (err) {
+    console.error("Update status error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
 
+/**
+ * EXPORT complaints (PDF / Word) – Filter aware
+ */
+exports.exportComplaints = async (req, res) => {
+  try {
+    if (req.user.role !== "Admin") {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const { format, status, issueType } = req.query;
+
+    const filter = {};
+    if (status) filter.status = status;
+    if (issueType) filter.issueType = issueType;
+
+    const complaints = await Issue.find(filter)
+      .populate("reportedBy", "name email")
+      .populate("assignedTo", "name")
+      .sort({ createdAt: -1 });
+
+    // -------- PDF EXPORT --------
+    if (format === "pdf") {
+      const doc = new PDFDocument({ margin: 40 });
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=complaints.pdf"
+      );
+
+      doc.pipe(res);
+
+      doc.fontSize(18).text("Civic Complaints Report", { align: "center" });
+      doc.moveDown();
+
+      complaints.forEach((c, i) => {
+        doc
+          .fontSize(12)
+          .text(`${i + 1}. ${c.issueTitle || "No Title"}`)
+          .text(`Type: ${c.issueType}`)
+          .text(`Status: ${c.status}`)
+          .text(`Address: ${c.address || "Not specified"}`)
+          .text(`Reported By: ${c.reportedBy?.name || "-"}`)
+          .text(`Assigned To: ${c.assignedTo?.name || "Unassigned"}`)
+          .moveDown();
+      });
+
+      doc.end();
+      return;
+    }
+
+    // -------- WORD EXPORT --------
+    if (format === "word") {
+      const doc = new Document({
+        sections: [
+          {
+            children: complaints.map(
+              (c, i) =>
+                new Paragraph(
+                  `${i + 1}. ${c.issueTitle || "No Title"} | ${c.issueType} | ${c.status} | ${c.address || "Not specified"}`
+                )
+            ),
+          },
+        ],
+      });
+
+      const buffer = await Packer.toBuffer(doc);
+
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=complaints.docx"
+      );
+      res.send(buffer);
+      return;
+    }
+
+    res.status(400).json({ error: "Invalid export format" });
+  } catch (err) {
+    console.error("Export error:", err);
+    res.status(500).json({ error: "Export failed" });
+  }
+};

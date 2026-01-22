@@ -1,92 +1,3 @@
-// import { useEffect, useState } from "react";
-// import { getAllComplaints } from "../services/adminComplaintService";
-// import StatusBadge from "../components/common/StatusBadge";
-// import { updateComplaintStatus } from "../services/adminComplaintService";
-
-
-// const AdminComplaintsPage = () => {
-//   const [complaints, setComplaints] = useState([]);
-//   const [loading, setLoading] = useState(true);
-
-//   useEffect(() => {
-//     fetchComplaints();
-//   }, []);
-
-//   const fetchComplaints = async () => {
-//     try {
-//       const data = await getAllComplaints();
-//       setComplaints(data);
-//     } catch (err) {
-//       console.error(err);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   if (loading) return <div className="p-6">Loading complaints...</div>;
-
-//   return (
-//     <div className="p-6">
-//       <h1 className="text-2xl font-bold mb-4">All Complaints</h1>
-
-//       <div className="bg-white rounded-xl shadow overflow-x-auto">
-//         <table className="min-w-full text-sm">
-//           <thead className="bg-gray-100 text-gray-700">
-//             <tr>
-//               <th className="px-4 py-3 text-left">Title</th>
-//               <th className="px-4 py-3">Reported By</th>
-//               <th className="px-4 py-3">Location</th>
-//               <th className="px-4 py-3">Type</th>
-//               <th className="px-4 py-3">Status</th>
-//               <th className="px-4 py-3">Assigned To</th>
-//               <th className="px-4 py-3">Date</th>
-//               <th className="px-4 py-3">Actions</th>
-//             </tr>
-//           </thead>
-
-//           <tbody>
-//             {complaints.map((c) => (
-//               <tr key={c._id} className="border-t hover:bg-gray-50">
-//                 {/* <td className="px-4 py-3 font-medium">{c.title}</td> */}
-//                 <td className="px-4 py-3 font-medium">
-//   {c.description || "—"}
-// </td>
-//                 <td className="px-4 py-3">{c.reportedBy?.name}</td>
-//                 {/* <td className="px-4 py-3">{c.locationText}</td> */}
-//                 <td className="px-4 py-3">
-//   {c.address || "—"}
-// </td>
-//                 {/* <td className="px-4 py-3">{c.type}</td> */}
-//                 <td className="px-4 py-3">
-//   {c.category || "—"}
-// </td>
-//                 <td className="px-4 py-3">
-//                   <StatusBadge status={c.status} />
-//                 </td>
-//                 <td className="px-4 py-3">
-//                   {c.assignedTo?.name || "Unassigned"}
-//                 </td>
-//                 <td className="px-4 py-3">
-//                   {new Date(c.createdAt).toLocaleString()}
-//                 </td>
-//                 <td className="px-4 py-3 text-purple-600 cursor-pointer">
-//                   ✏️
-//                 </td>
-//               </tr>
-//             ))}
-//           </tbody>
-//         </table>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default AdminComplaintsPage;
-
-
-
-
-
 import { useEffect, useState } from "react";
 import {
   getAllComplaints,
@@ -97,21 +8,28 @@ import StatusBadge from "../components/common/StatusBadge";
 const AdminComplaintsPage = () => {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+  status: "",
+  category: "",
+});
+
 
   useEffect(() => {
     fetchComplaints();
   }, []);
 
   const fetchComplaints = async () => {
-    try {
-      const data = await getAllComplaints();
-      setComplaints(data);
-    } catch (err) {
-      console.error("Failed to fetch complaints", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+    const data = await getAllComplaints(filters);
+    setComplaints(data);
+  } catch (err) {
+    console.error("Failed to fetch complaints", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleStatusChange = async (id, newStatus) => {
     try {
@@ -133,6 +51,41 @@ const AdminComplaintsPage = () => {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">All Complaints</h1>
+      <div className="flex gap-4 mb-4">
+  <select
+    value={filters.status}
+    onChange={(e) =>
+      setFilters({ ...filters, status: e.target.value })
+    }
+    className="border px-3 py-2 rounded text-sm"
+  >
+    <option value="">All Status</option>
+    <option value="Pending">Pending</option>
+    <option value="In Progress">In Progress</option>
+    <option value="Resolved">Resolved</option>
+  </select>
+
+  <select
+    value={filters.category}
+    onChange={(e) =>
+      setFilters({ ...filters, category: e.target.value })
+    }
+    className="border px-3 py-2 rounded text-sm"
+  >
+    <option value="">All Types</option>
+    <option value="Garbage">Garbage</option>
+    <option value="Road">Road</option>
+    <option value="Water">Water</option>
+  </select>
+
+  <button
+    onClick={fetchComplaints}
+    className="px-4 py-2 bg-teal-600 text-white rounded text-sm hover:bg-teal-700"
+  >
+    Apply Filters
+  </button>
+</div>
+
 
       <div className="bg-white rounded-xl shadow overflow-x-auto">
         <table className="min-w-full text-sm">
@@ -224,3 +177,6 @@ const AdminComplaintsPage = () => {
 };
 
 export default AdminComplaintsPage;
+
+
+

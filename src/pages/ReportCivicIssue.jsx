@@ -156,7 +156,7 @@ export default function ReportCivicIssue() {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoadingAddress || !address}
             className="w-full bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:via-emerald-600 hover:to-teal-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-green-200 hover:shadow-xl hover:shadow-green-300 transition-all btn-press disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isSubmitting ? (

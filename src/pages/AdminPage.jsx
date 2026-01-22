@@ -3,9 +3,37 @@ import { Link } from "react-router-dom";
 import logo from "../assets/logo-leaf.png";
 import PieChart from "../components/common/PieChart";
 import RecentActivities from "../components/admin/RecentActivities";
+// import { exportComplaints } from "../services/adminComplaintService";
+import { useEffect, useState } from "react";
+import { getAllComplaints, exportComplaints } from "../services/adminComplaintService";
 
 
 const AdminPage = () => {
+
+  const [recentComplaints, setRecentComplaints] = useState([]);
+const [showFilters, setShowFilters] = useState(false);
+
+const [filters, setFilters] = useState({
+  status: "",
+  issueType: "",
+});
+
+const [showExport, setShowExport] = useState(false);
+
+
+const fetchRecentComplaints = async () => {
+    try {
+      const data = await getAllComplaints(filters);
+      setRecentComplaints(data.slice(0, 5)); // only recent 5
+    } catch (err) {
+      console.error("Failed to fetch recent complaints", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchRecentComplaints();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top Navigation Header */}
@@ -233,64 +261,123 @@ const AdminPage = () => {
                 </svg>
                 <span>Recent Complaints</span>
               </h2>
-              <div className="flex gap-2">
-                <button className="px-2 py-1 text-xs bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                  </svg>
-                  Filter
-                </button>
-                <button className="px-2 py-1 text-xs bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Export
-                </button>
-              </div>
-            </div>
+
+            <div className="flex gap-2">
+
+  {/* FILTER WRAPPER */}
+  <div className="relative">
+    <button
+      onClick={() => setShowFilters(!showFilters)}
+      className="px-2 py-1 text-xs bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition flex items-center gap-1"
+    >
+      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+        />
+      </svg>
+      Filter
+    </button>
+
+    {/* FILTER DROPDOWN */}
+    {showFilters && (
+      <div className="absolute top-full left-0 mt-2 bg-white border rounded-lg shadow-md p-3 z-30 w-48">
+        <select
+          value={filters.status}
+          onChange={(e) =>
+            setFilters({ ...filters, status: e.target.value })
+          }
+          className="w-full border px-2 py-1 text-xs rounded mb-2"
+        >
+          <option value="">All Status</option>
+          <option value="Pending">Pending</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Resolved">Resolved</option>
+        </select>
+
+        <select
+          value={filters.issueType}
+          onChange={(e) =>
+            setFilters({ ...filters, issueType: e.target.value })
+          }
+          className="w-full border px-2 py-1 text-xs rounded mb-2"
+        >
+          <option value="">All Categories</option>
+          <option value="Road">Road</option>
+          <option value="Water">Water</option>
+          <option value="Garbage">Garbage</option>
+        </select>
+
+        <button
+          onClick={() => {
+            fetchRecentComplaints();
+            setShowFilters(false);
+          }}
+          className="w-full bg-teal-600 text-white text-xs py-1 rounded"
+        >
+          Apply Filters
+        </button>
+      </div>
+    )}
+  </div>
+
+  {/* EXPORT WRAPPER */}
+  <div className="relative">
+    <button
+      className="px-2 py-1 text-xs bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition"
+      onClick={() => setShowExport(!showExport)}
+    >
+      Export
+    </button>
+
+    {showExport && (
+      <div className="absolute top-full right-0 mt-2 bg-white border rounded shadow-md z-30">
+        <button
+          onClick={() => exportComplaints("pdf", filters)}
+          className="block px-4 py-2 hover:bg-gray-100 w-full text-left text-sm"
+        >
+          Export as PDF
+        </button>
+        <button
+          onClick={() => exportComplaints("word", filters)}
+          className="block px-4 py-2 hover:bg-gray-100 w-full text-left text-sm"
+        >
+          Export as Word
+        </button>
+      </div>
+    )}
+  </div>
+
+</div>
+</div>
 
             <div className="space-y-3">
-              {/* Complaint 1 */}
-              <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-800 text-xs">Large pothole on Highway 5</h3>
-                    <p className="text-[10px] text-gray-600 mt-0.5">Reported by John Smith</p>
-                  </div>
-                  <span className="px-2 py-0.5 bg-red-200 text-red-800 text-[10px] font-semibold rounded">High</span>
-                </div>
-                <div className="flex items-center justify-between text-[10px] text-gray-600 mb-2">
-                  <span className="flex items-center gap-1">📍 Highway 5, District 3</span>
-                  <span>2 hours ago</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button className="px-2 py-0.5 bg-white rounded text-[10px] flex items-center gap-1 hover:bg-gray-100 transition">
-                    👍 45
-                  </button>
-                  <button className="px-2 py-0.5 bg-white rounded text-[10px] hover:bg-gray-100 transition">💬</button>
-                  <button className="px-2 py-0.5 bg-white rounded text-[10px] hover:bg-gray-100 transition">✅</button>
-                  <button className="px-2 py-0.5 bg-white rounded text-[10px] hover:bg-gray-100 transition">🗑️</button>
-                </div>
-              </div>
+  {recentComplaints.map((c) => (
+    <div
+      key={c._id}
+      className="bg-gray-50 rounded-xl p-3 border border-gray-200"
+    >
+      <div className="flex items-start justify-between mb-1">
+        <div className="flex-1">
+          <h3 className="font-semibold text-gray-800 text-xs">
+            {c.issueTitle || "No Title"}
+          </h3>
+          <p className="text-[10px] text-gray-600">
+            Reported by {c.reportedBy?.name || "Unknown"}
+          </p>
+        </div>
 
-              {/* Complaint 2 */}
-              <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-800 text-xs">Broken streetlight near park</h3>
-                    <p className="text-[10px] text-gray-600 mt-0.5">Reported by Sarah</p>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="px-2 py-0.5 bg-yellow-200 text-yellow-800 text-[10px] font-semibold rounded">Medium</span>
-                    <span className="px-2 py-0.5 bg-yellow-300 text-yellow-900 text-[10px] font-semibold rounded">In Progress</span>
-                  </div>
-                </div>
-                <div className="text-[10px] text-gray-600">
-                  <span>📍 </span>
-                </div>
-              </div>
-            </div>
-          </div>
+        <span className="px-2 py-0.5 bg-yellow-200 text-yellow-900 text-[10px] rounded">
+          {c.status}
+        </span>
+      </div>
+
+      <p className="text-[10px] text-gray-600">
+        📍 {c.address || "Not specified"}
+      </p>
+    </div>
+  ))}
+</div>
+</div>
 
           {/* Quick Actions - Middle */}
           <div className="bg-white rounded-2xl p-5 shadow-sm">
