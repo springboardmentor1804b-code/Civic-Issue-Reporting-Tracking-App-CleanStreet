@@ -193,8 +193,8 @@ const ComplaintModal = ({ complaint, onClose, onDelete, onAssign, volunteers }) 
   const volunteerOptions = volunteers.map(v => v.name);
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full  overflow-y-auto">
+    <div className="fixed inset-0 h-full self-center bg-black/50 z-[9999] flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">Complaint Details</h2>
           <button
@@ -206,7 +206,7 @@ const ComplaintModal = ({ complaint, onClose, onDelete, onAssign, volunteers }) 
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 space-y-4">
           <div>
             <h3 className="text-lg font-semibold text-gray-900 ">{complaint.title}</h3>
             <p className="text-gray-700 leading-relaxed">
@@ -215,7 +215,7 @@ const ComplaintModal = ({ complaint, onClose, onDelete, onAssign, volunteers }) 
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-2">
               <FiMapPin className="w-5 h-5 text-blue-600 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-gray-500">Address</p>
@@ -223,7 +223,7 @@ const ComplaintModal = ({ complaint, onClose, onDelete, onAssign, volunteers }) 
               </div>
             </div>
 
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-2">
               <FiCalendar className="w-5 h-5 text-blue-600 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-gray-500">Reported At</p>
@@ -231,7 +231,7 @@ const ComplaintModal = ({ complaint, onClose, onDelete, onAssign, volunteers }) 
               </div>
             </div>
 
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-2">
               <FiUser className="w-5 h-5 text-blue-600 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-gray-500">Reported By</p>
@@ -239,7 +239,7 @@ const ComplaintModal = ({ complaint, onClose, onDelete, onAssign, volunteers }) 
               </div>
             </div>
 
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-2">
               <FiAlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-gray-500">Status</p>
@@ -263,7 +263,7 @@ const ComplaintModal = ({ complaint, onClose, onDelete, onAssign, volunteers }) 
           </div>
 
           {timeUnassigned && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg py-2 px-4">
               <div className="flex items-center gap-3">
                 <FiClock className="w-5 h-5 text-yellow-600" />
                 <div>

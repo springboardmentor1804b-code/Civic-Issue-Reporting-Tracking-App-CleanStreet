@@ -731,7 +731,7 @@ export default function CommunityReports() {
 
   useEffect(() => {
     if (userRole === 'Volunteer' && !localStorage.getItem('preferredViewMode')) {
-      setViewMode('all'); 
+      setViewMode('all');
     } else if (userRole !== 'Volunteer' && !localStorage.getItem('preferredViewMode')) {
       setViewMode('global');
     }
@@ -1266,152 +1266,154 @@ export default function CommunityReports() {
   return (
     <div>
       <AuroraBackground />
-      <Navbar />
-      <main className="max-w-7xl mx-auto px-4 py-10 relative">
-        <div className="flex items-center justify-between mb-8 px-6">
-          <h2 className="text-3xl font-bold">Community Reports</h2>
+      <div className="flex flex-col relative min-h-screen">
+        <Navbar />
+        <main className="max-w-7xl mx-auto px-4 py-10 flex-1 w-full">
+          <div className="flex items-center justify-between mb-8 px-6">
+            <h2 className="text-3xl font-bold">Community Reports</h2>
 
-          <div className="flex gap-2">
-            {userRole === 'Volunteer' && (
-              <button
-                onClick={() => setViewMode('all')}
-                className={`px-4 py-1.5 rounded-md text-sm font-semibold border
+            <div className="flex gap-2">
+              {userRole === 'Volunteer' && (
+                <button
+                  onClick={() => setViewMode('all')}
+                  className={`px-4 py-1.5 rounded-md text-sm font-semibold border
                 ${
                   viewMode === 'all'
                     ? 'bg-blue-600 text-white  border-blue-700'
                     : 'bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-100'
                 }`}
-              >
-                Nearby
-              </button>
-            )}
-            <button
-              onClick={() => setViewMode('global')}
-              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all
+                >
+                  Nearby
+                </button>
+              )}
+              <button
+                onClick={() => setViewMode('global')}
+                className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all
                   ${
                     viewMode === 'global'
                       ? 'bg-blue-600 text-white  border-blue-700'
                       : 'bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-100'
                   }`}
-            >
-              {userRole === 'Volunteer' ? 'All Locations' : 'All Reports'}
-            </button>
-            <button
-              onClick={() => setViewMode('mine')}
-              className={`px-4 py-1.5 rounded-md text-sm font-semibold border
+              >
+                {userRole === 'Volunteer' ? 'All Locations' : 'All Reports'}
+              </button>
+              <button
+                onClick={() => setViewMode('mine')}
+                className={`px-4 py-1.5 rounded-md text-sm font-semibold border
                   ${
                     viewMode === 'mine'
                       ? 'bg-blue-600 text-white border-blue-700'
                       : 'bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-100'
                   }`}
-            >
-              My Reports
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 px-6">
-          {filteredReports.map(report => (
-            <ReportCard
-              key={report._id}
-              report={report}
-              userId={userId}
-              onViewDetails={handleViewDetails}
-              onVote={handleVote}
-              isLoading={votingLoading[report._id]}
-            />
-          ))}
-        </div>
-      </main>
-
-      <DeleteConfirmModal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        onConfirm={confirmDelete}
-        title={selectedReport?.title}
-      />
-
-      {showResolveModal && (
-        <div
-          className="fixed inset-0 bg-black/60 flex items-center justify-center z-9999"
-          onClick={() => {
-            setShowResolveModal(false);
-            setPendingStatus(null);
-          }}
-        >
-          <div
-            className="bg-white rounded-xl p-6 max-w-md w-full shadow-xl"
-            onClick={e => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-bold mb-3 text-red-600">Resolve Issue</h3>
-
-            <p className="text-gray-700 mb-6">
-              This issue will be marked as <b>resolved</b>.
-              <br />
-              This action cannot be undone.
-            </p>
-
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  setShowResolveModal(false);
-                  setPendingStatus(null);
-                }}
-                className="px-4 py-2 rounded-md border"
               >
-                Cancel
-              </button>
-
-              <button
-                onClick={() => {
-                  setShowResolveModal(false);
-                  updateStatus(pendingStatus);
-                  setPendingStatus(null);
-                }}
-                className="px-4 py-2 rounded-md bg-red-600 text-white"
-              >
-                Yes, Resolve
+                My Reports
               </button>
             </div>
           </div>
-        </div>
-      )}
 
-      <ReportModal
-        selectedReport={selectedReport}
-        isEditing={isEditing}
-        editForm={editForm}
-        comments={comments}
-        newComment={newComment}
-        userRole={userRole}
-        userId={userId}
-        canEdit={canEdit}
-        canDelete={canDelete}
-        canAcceptIssue={canAcceptIssue}
-        canDeclineIssue={canDeclineIssue}
-        isUpvoted={isUpvoted}
-        isDownvoted={isDownvoted}
-        votingLoading={votingLoading}
-        loadingGPS={loadingGPS}
-        onClose={handleModalClose}
-        onEditStart={handleEditStart}
-        onEditSave={handleEditSave}
-        onEditCancel={() => setIsEditing(false)}
-        onDelete={() => setShowDeleteModal(true)}
-        onAcceptIssue={handleAcceptIssue}
-        onDeclineIssue={handleDeclineIssue}
-        onStatusChange={handleStatusUpdate}
-        onVote={handleVote}
-        onEditFormChange={handleEditFormChange}
-        onLocationChange={loc => setEditForm(prev => ({ ...prev, location: loc }))}
-        onImageUpload={handleImageUpload}
-        onRemoveExistingImage={removeExistingImage}
-        onRemoveNewImage={removeNewImage}
-        onGetCurrentLocation={getCurrentLocation}
-        onCommentChange={e => setNewComment(e.target.value)}
-        onCommentSubmit={addComment}
-      />
-      <Footer />
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 px-6">
+            {filteredReports.map(report => (
+              <ReportCard
+                key={report._id}
+                report={report}
+                userId={userId}
+                onViewDetails={handleViewDetails}
+                onVote={handleVote}
+                isLoading={votingLoading[report._id]}
+              />
+            ))}
+          </div>
+        </main>
+
+        <DeleteConfirmModal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={confirmDelete}
+          title={selectedReport?.title}
+        />
+
+        {showResolveModal && (
+          <div
+            className="fixed inset-0 bg-black/60 flex items-center justify-center z-9999"
+            onClick={() => {
+              setShowResolveModal(false);
+              setPendingStatus(null);
+            }}
+          >
+            <div
+              className="bg-white rounded-xl p-6 max-w-md w-full shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold mb-3 text-red-600">Resolve Issue</h3>
+
+              <p className="text-gray-700 mb-6">
+                This issue will be marked as <b>resolved</b>.
+                <br />
+                This action cannot be undone.
+              </p>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowResolveModal(false);
+                    setPendingStatus(null);
+                  }}
+                  className="px-4 py-2 rounded-md border"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowResolveModal(false);
+                    updateStatus(pendingStatus);
+                    setPendingStatus(null);
+                  }}
+                  className="px-4 py-2 rounded-md bg-red-600 text-white"
+                >
+                  Yes, Resolve
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <ReportModal
+          selectedReport={selectedReport}
+          isEditing={isEditing}
+          editForm={editForm}
+          comments={comments}
+          newComment={newComment}
+          userRole={userRole}
+          userId={userId}
+          canEdit={canEdit}
+          canDelete={canDelete}
+          canAcceptIssue={canAcceptIssue}
+          canDeclineIssue={canDeclineIssue}
+          isUpvoted={isUpvoted}
+          isDownvoted={isDownvoted}
+          votingLoading={votingLoading}
+          loadingGPS={loadingGPS}
+          onClose={handleModalClose}
+          onEditStart={handleEditStart}
+          onEditSave={handleEditSave}
+          onEditCancel={() => setIsEditing(false)}
+          onDelete={() => setShowDeleteModal(true)}
+          onAcceptIssue={handleAcceptIssue}
+          onDeclineIssue={handleDeclineIssue}
+          onStatusChange={handleStatusUpdate}
+          onVote={handleVote}
+          onEditFormChange={handleEditFormChange}
+          onLocationChange={loc => setEditForm(prev => ({ ...prev, location: loc }))}
+          onImageUpload={handleImageUpload}
+          onRemoveExistingImage={removeExistingImage}
+          onRemoveNewImage={removeNewImage}
+          onGetCurrentLocation={getCurrentLocation}
+          onCommentChange={e => setNewComment(e.target.value)}
+          onCommentSubmit={addComment}
+        />
+        <Footer />
+      </div>
     </div>
   );
 }
