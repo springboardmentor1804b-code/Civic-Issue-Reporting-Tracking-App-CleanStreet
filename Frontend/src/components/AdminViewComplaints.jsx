@@ -24,6 +24,7 @@ import {
   FiTrash2,
   FiUser,
   FiX,
+  FiMoreVertical,
 } from 'react-icons/fi';
 import CustomSelect from '../components/CustomSelect';
 import { createPortal } from 'react-dom';
@@ -83,46 +84,49 @@ const UserNameDisplay = ({ userId, type, status }) => {
   );
 };
 
+const calculateDistance = (lat1, lng1, lat2, lng2) => {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+const getNearbyVolunteers = (complaintLocation, volunteers) => {
+  if (!complaintLocation?.lat || !complaintLocation?.lng) {
+    return [];
+  }
+
+  const complaintLat = complaintLocation.lat;
+  const complaintLng = complaintLocation.lng;
+
+  return volunteers.filter(volunteer => {
+    if (!volunteer.coordinates?.lat || !volunteer.coordinates?.lng) {
+      return false;
+    }
+    const distance = calculateDistance(
+      complaintLat,
+      complaintLng,
+      volunteer.coordinates.lat,
+      volunteer.coordinates.lng
+    );
+    return distance <= 50;
+  });
+};
+
 const ComplaintModal = ({ complaint, onClose, onDelete, onAssign, volunteers }) => {
   const [selectedVolunteer, setSelectedVolunteer] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
 
   const nearbyVolunteers = useMemo(() => {
-    if (!complaint.location?.lat || !complaint.location?.lng) {
-      return volunteers;
-    }
-
-    const complaintLat = complaint.location.lat;
-    const complaintLng = complaint.location.lng;
-
-    const calculateDistance = (lat1, lng1, lat2, lng2) => {
-      const R = 6371;
-
-      const dLat = ((lat2 - lat1) * Math.PI) / 180;
-      const dLng = ((lng2 - lng1) * Math.PI) / 180;
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos((lat1 * Math.PI) / 180) *
-          Math.cos((lat2 * Math.PI) / 180) *
-          Math.sin(dLng / 2) *
-          Math.sin(dLng / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
-    };
-
-    return volunteers.filter(volunteer => {
-      if (!volunteer.coordinates?.lat || !volunteer.coordinates?.lng) {
-        return false;
-      }
-      const distance = calculateDistance(
-        complaintLat,
-        complaintLng,
-        volunteer.coordinates.lat,
-        volunteer.coordinates.lng
-      );
-      return distance <= 50;
-    });
+    return getNearbyVolunteers(complaint.location, volunteers);
   }, [complaint.location, volunteers]);
 
   const getTimeUnassigned = () => {
@@ -167,7 +171,7 @@ const ComplaintModal = ({ complaint, onClose, onDelete, onAssign, volunteers }) 
       return;
     }
 
-    const selectedUser = volunteers.find(v => v.name === selectedVolunteer);
+    const selectedUser = nearbyVolunteers.find(v => v.name === selectedVolunteer);
 
     if (!selectedUser) {
       toast.error('Selected volunteer not found');
@@ -190,41 +194,42 @@ const ComplaintModal = ({ complaint, onClose, onDelete, onAssign, volunteers }) 
   const reporterId = complaint.createdBy?._id || complaint.createdBy;
   const assigneeId = complaint.assignedTo?._id || complaint.assignedTo;
 
-  const volunteerOptions = volunteers.map(v => v.name);
+  const volunteerOptions = nearbyVolunteers.map(v => v.name);
 
   return createPortal(
     <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full  overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
           <h2 className="text-2xl font-bold text-gray-900">Complaint Details</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
             title="Close"
+            aria-label="Close modal"
           >
-            <FiX className="w-6 h-6 text-gray-500" />
+            <FiX className="w-6 h-6 text-gray-500 hover:text-gray-700" />
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 ">{complaint.title}</h3>
-            <p className="text-gray-700 leading-relaxed">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">{complaint.title}</h3>
+            <p className="text-gray-700 leading-relaxed whitespace-pre-line">
               {complaint.description || 'No description provided'}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-start gap-3">
-              <FiMapPin className="w-5 h-5 text-blue-600 mt-0.5" />
-              <div>
+              <FiMapPin className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-500">Address</p>
-                <p className="text-gray-900">{complaint.address || 'N/A'}</p>
+                <p className="text-gray-900 truncate">{complaint.address || 'N/A'}</p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <FiCalendar className="w-5 h-5 text-blue-600 mt-0.5" />
+              <FiCalendar className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-gray-500">Reported At</p>
                 <p className="text-gray-900">{complaint.createdAt?.split('T')[0] || 'N/A'}</p>
@@ -232,7 +237,7 @@ const ComplaintModal = ({ complaint, onClose, onDelete, onAssign, volunteers }) 
             </div>
 
             <div className="flex items-start gap-3">
-              <FiUser className="w-5 h-5 text-blue-600 mt-0.5" />
+              <FiUser className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-gray-500">Reported By</p>
                 <UserNameDisplay userId={reporterId} type="reported" />
@@ -240,11 +245,11 @@ const ComplaintModal = ({ complaint, onClose, onDelete, onAssign, volunteers }) 
             </div>
 
             <div className="flex items-start gap-3">
-              <FiAlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+              <FiAlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-gray-500">Status</p>
                 <span
-                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                  className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
                     complaint.status === 'Pending' || complaint.status === 'received'
                       ? 'bg-yellow-100 text-yellow-800'
                       : complaint.status === 'In Progress' || complaint.status === 'in-progress'
@@ -265,7 +270,7 @@ const ComplaintModal = ({ complaint, onClose, onDelete, onAssign, volunteers }) 
           {timeUnassigned && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <div className="flex items-center gap-3">
-                <FiClock className="w-5 h-5 text-yellow-600" />
+                <FiClock className="w-5 h-5 text-yellow-600 flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-yellow-900">Unassigned Duration</p>
                   <p className="text-yellow-700">{timeUnassigned}</p>
@@ -274,11 +279,11 @@ const ComplaintModal = ({ complaint, onClose, onDelete, onAssign, volunteers }) 
             </div>
           )}
 
-          <div className="border-t border-gray-200 pt-2">
+          <div className="border-t border-gray-200 pt-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Assignment</h3>
 
             {complaint.acceptedAt && assigneeId ? (
-              <div className="mb-4">
+              <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
                 <p className="text-sm font-medium text-gray-500 mb-2">Currently Assigned To</p>
                 <UserNameDisplay
                   userId={assigneeId}
@@ -287,39 +292,58 @@ const ComplaintModal = ({ complaint, onClose, onDelete, onAssign, volunteers }) 
                 />
               </div>
             ) : (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+              <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <p className="text-sm text-gray-600">
                   This complaint is not yet assigned to any volunteer
                 </p>
               </div>
             )}
 
-            <div>
-              <CustomSelect
-                label={
-                  complaint.acceptedAt ? 'Reassign to Different Volunteer' : 'Assign to Volunteer'
-                }
-                value={selectedVolunteer}
-                options={volunteerOptions}
-                onChange={setSelectedVolunteer}
-              />
+            <div className="space-y-4">
+              {nearbyVolunteers.length > 0 ? (
+                <>
+                  <CustomSelect
+                    label={
+                      complaint.acceptedAt
+                        ? 'Reassign to Different Volunteer'
+                        : 'Assign to Volunteer'
+                    }
+                    value={selectedVolunteer}
+                    options={volunteerOptions}
+                    onChange={setSelectedVolunteer}
+                    placeholder="Select a volunteer"
+                  />
 
-              <button
-                onClick={handleAssign}
-                disabled={isAssigning || !selectedVolunteer}
-                className="mt-3 w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
-              >
-                {isAssigning ? (
-                  <>
-                    <FiLoader className="w-4 h-4 animate-spin" />
-                    Assigning...
-                  </>
-                ) : complaint.acceptedAt ? (
-                  'Reassign Volunteer'
-                ) : (
-                  'Assign Volunteer'
-                )}
-              </button>
+                  <div className="text-sm text-gray-500">
+                    {nearbyVolunteers.length} volunteer{nearbyVolunteers.length !== 1 ? 's' : ''}{' '}
+                    available within 50km radius
+                  </div>
+
+                  <button
+                    onClick={handleAssign}
+                    disabled={isAssigning || !selectedVolunteer}
+                    className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+                  >
+                    {isAssigning ? (
+                      <>
+                        <FiLoader className="w-4 h-4 animate-spin" />
+                        Assigning...
+                      </>
+                    ) : complaint.acceptedAt ? (
+                      'Reassign Volunteer'
+                    ) : (
+                      'Assign Volunteer'
+                    )}
+                  </button>
+                </>
+              ) : (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-red-700 font-medium">No nearby volunteers available</p>
+                  <p className="text-red-600 text-sm mt-1">
+                    There are no volunteers within 50km radius of this complaint location.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -328,7 +352,7 @@ const ComplaintModal = ({ complaint, onClose, onDelete, onAssign, volunteers }) 
           <button
             onClick={handleDelete}
             disabled={isDeleting}
-            className="w-full px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+            className="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
           >
             {isDeleting ? (
               <>
@@ -346,6 +370,63 @@ const ComplaintModal = ({ complaint, onClose, onDelete, onAssign, volunteers }) 
       </div>
     </div>,
     document.body
+  );
+};
+
+const MobileComplaintCard = ({ complaint, onClick }) => {
+  const reporterId = complaint.createdBy?._id || complaint.createdBy;
+  const assigneeId = complaint.assignedTo?._id || complaint.assignedTo;
+
+  return (
+    <div
+      className="bg-white rounded-lg border border-gray-200 p-4 mb-3 hover:shadow-md transition-shadow cursor-pointer"
+      onClick={onClick}
+    >
+      <div className="flex justify-between items-start mb-3">
+        <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 flex-1 mr-2">
+          {complaint.title}
+        </h3>
+        <button className="text-blue-600 hover:text-blue-700 p-1">
+          <FiMoreVertical className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center text-sm text-gray-600">
+          <FiUser className="w-4 h-4 mr-2 flex-shrink-0" />
+          <span className="truncate">
+            <UserNameDisplay userId={reporterId} type="reported" />
+          </span>
+        </div>
+
+        <div className="flex items-center text-sm text-gray-600">
+          <FiMapPin className="w-4 h-4 mr-2 flex-shrink-0" />
+          <span className="truncate">{complaint.address || 'N/A'}</span>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-medium ${
+              complaint.status === 'Pending' || complaint.status === 'received'
+                ? 'bg-yellow-100 text-yellow-800'
+                : complaint.status === 'In Progress' || complaint.status === 'in-progress'
+                  ? 'bg-blue-100 text-blue-800'
+                  : complaint.status === 'Resolved' || complaint.status === 'resolved'
+                    ? 'bg-green-100 text-green-800'
+                    : complaint.status === 'Rejected'
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-gray-100 text-gray-800'
+            }`}
+          >
+            {complaint.status}
+          </span>
+
+          <span className="text-xs text-gray-500">
+            {complaint.createdAt?.split('T')[0] || 'N/A'}
+          </span>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -392,21 +473,6 @@ const AdminViewComplaints = () => {
     }
   };
 
-  const calculateDistance = (lat1, lng1, lat2, lng2) => {
-    const R = 6371;
-
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLng = ((lng2 - lng1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLng / 2) *
-        Math.sin(dLng / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
   const getVolunteers = async () => {
     try {
       const res = await axios.get(`${BACKEND}/api/admin/users`, { headers });
@@ -428,13 +494,11 @@ const AdminViewComplaints = () => {
   const handleAssignComplaint = async (complaintId, volunteerId) => {
     try {
       const issue = issuesList.find(i => i._id === complaintId);
-
       await axios.patch(
         `${BACKEND}/api/issues/${complaintId}/assign`,
         { volunteerId },
         { headers }
       );
-
       await getIssuesList();
     } catch (err) {
       console.error('Error assigning complaint:', err);
@@ -473,7 +537,9 @@ const AdminViewComplaints = () => {
         accessorKey: 'title',
         header: 'Title',
         cell: info => (
-          <div className="font-medium text-gray-900 max-w-xs truncate">{info.getValue()}</div>
+          <div className="font-medium text-gray-900 line-clamp-2 max-w-[200px]">
+            {info.getValue()}
+          </div>
         ),
       },
       {
@@ -481,14 +547,18 @@ const AdminViewComplaints = () => {
         header: 'Reported By',
         cell: ({ row }) => {
           const reporterId = row.original.createdBy?._id || row.original.createdBy;
-          return <UserNameDisplay userId={reporterId} type="reported" />;
+          return (
+            <div className="min-w-[120px]">
+              <UserNameDisplay userId={reporterId} type="reported" />
+            </div>
+          );
         },
       },
       {
         accessorKey: 'address',
         header: 'Address',
         cell: info => (
-          <div className="max-w-xs truncate text-gray-700">{info.getValue() || 'N/A'}</div>
+          <div className="max-w-[180px] truncate text-gray-700">{info.getValue() || 'N/A'}</div>
         ),
       },
       {
@@ -507,7 +577,7 @@ const AdminViewComplaints = () => {
           };
           return (
             <span
-              className={`px-2 py-1 rounded-full text-xs font-medium ${
+              className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
                 statusColors[status] || 'bg-gray-100 text-gray-800'
               }`}
             >
@@ -522,7 +592,13 @@ const AdminViewComplaints = () => {
         cell: ({ row }) => {
           const assigneeId = row.original.assignedTo?._id || row.original.assignedTo;
           return (
-            <UserNameDisplay userId={assigneeId} type="assigned" status={row.original.acceptedAt} />
+            <div className="min-w-[120px]">
+              <UserNameDisplay
+                userId={assigneeId}
+                type="assigned"
+                status={row.original.acceptedAt}
+              />
+            </div>
           );
         },
       },
@@ -530,7 +606,9 @@ const AdminViewComplaints = () => {
         accessorKey: 'createdAt',
         header: 'Reported At',
         cell: info => (
-          <span className="text-gray-700">{info.getValue()?.split('T')[0] || 'N/A'}</span>
+          <span className="text-gray-700 whitespace-nowrap">
+            {info.getValue()?.split('T')[0] || 'N/A'}
+          </span>
         ),
       },
       {
@@ -538,7 +616,7 @@ const AdminViewComplaints = () => {
         cell: ({ row }) => (
           <button
             onClick={() => setSelectedComplaint(row.original)}
-            className="p-2 rounded-md hover:bg-blue-50 transition text-blue-600 hover:text-blue-700"
+            className="p-2 rounded-md hover:bg-blue-50 transition text-blue-600 hover:text-blue-700 whitespace-nowrap"
             title="View and manage complaint"
           >
             <FiEdit2 className="w-4 h-4" />
@@ -565,7 +643,7 @@ const AdminViewComplaints = () => {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <FiAlertCircle className="w-8 h-8 text-blue-600" />
@@ -618,54 +696,81 @@ const AdminViewComplaints = () => {
               <span className="ml-3 text-gray-600 font-medium">Loading complaints...</span>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  {table.getHeaderGroups().map(headerGroup => (
-                    <tr key={headerGroup.id}>
-                      {headerGroup.headers.map(header => (
-                        <th
-                          key={header.id}
-                          className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
-                          <div className="flex items-center gap-2">
-                            {flexRender(header.column.columnDef.header, header.getContext())}
-                            <span className="text-gray-400">
-                              {header.column.getIsSorted() === 'asc' && (
-                                <FiChevronUp className="w-4 h-4" />
-                              )}
-                              {header.column.getIsSorted() === 'desc' && (
-                                <FiChevronDown className="w-4 h-4" />
-                              )}
-                            </span>
-                          </div>
-                        </th>
+            <>
+              {/* Mobile View */}
+              <div className="lg:hidden">
+                {filteredData.length === 0 ? (
+                  <div className="px-6 py-12 text-center text-gray-500">
+                    No complaints found matching your criteria
+                  </div>
+                ) : (
+                  <div className="p-4">
+                    {filteredData.map(complaint => (
+                      <MobileComplaintCard
+                        key={complaint._id}
+                        complaint={complaint}
+                        onClick={() => setSelectedComplaint(complaint)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop View */}
+              <div className="hidden lg:block">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      {table.getHeaderGroups().map(headerGroup => (
+                        <tr key={headerGroup.id}>
+                          {headerGroup.headers.map(header => (
+                            <th
+                              key={header.id}
+                              className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors whitespace-nowrap"
+                              onClick={header.column.getToggleSortingHandler()}
+                            >
+                              <div className="flex items-center gap-2">
+                                {flexRender(header.column.columnDef.header, header.getContext())}
+                                <span className="text-gray-400">
+                                  {header.column.getIsSorted() === 'asc' && (
+                                    <FiChevronUp className="w-4 h-4" />
+                                  )}
+                                  {header.column.getIsSorted() === 'desc' && (
+                                    <FiChevronDown className="w-4 h-4" />
+                                  )}
+                                </span>
+                              </div>
+                            </th>
+                          ))}
+                        </tr>
                       ))}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {table.getRowModel().rows.length === 0 ? (
-                    <tr>
-                      <td colSpan={columns.length} className="px-6 py-12 text-center text-gray-500">
-                        No complaints found matching your criteria
-                      </td>
-                    </tr>
-                  ) : (
-                    table.getRowModel().rows.map(row => (
-                      <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-                        {row.getVisibleCells().map(cell => (
-                          <td key={cell.id} className="px-6 py-4 text-sm">
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {table.getRowModel().rows.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={columns.length}
+                            className="px-6 py-12 text-center text-gray-500"
+                          >
+                            No complaints found matching your criteria
                           </td>
-                        ))}
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                        </tr>
+                      ) : (
+                        table.getRowModel().rows.map(row => (
+                          <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                            {row.getVisibleCells().map(cell => (
+                              <td key={cell.id} className="px-4 py-3 text-sm">
+                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              </td>
+                            ))}
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
           )}
 
           {filteredData.length > 10 && (

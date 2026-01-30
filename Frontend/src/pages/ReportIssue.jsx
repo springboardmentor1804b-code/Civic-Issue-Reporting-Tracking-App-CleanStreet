@@ -234,7 +234,7 @@ export default function ReportIssue() {
                   name="title"
                   type="text"
                   placeholder="Eg: Garbage not collected"
-                  className="w-full border-2 p-3 rounded-2xl input-glow hover:border-cyan-200 focus:border-cyan-400 focus:ring-cyan-100 outline-none transition"
+                  className="w-full border-2 p-3 border-gray-300 rounded-lg input-glow hover:border-cyan-200 focus:border-cyan-400 focus:ring-cyan-100 outline-none transition"
                 />
               </div>
 
@@ -262,7 +262,7 @@ export default function ReportIssue() {
                   name="address"
                   type="text"
                   placeholder="street/area, city, state, zip code"
-                  className="w-full border-2 p-3 rounded-2xl input-glow hover:border-cyan-200 focus:border-cyan-400 focus:ring-cyan-100 outline-none transition"
+                  className="w-full border-2 border-gray-300 p-3 rounded-lg input-glow hover:border-cyan-200 focus:border-cyan-400 focus:ring-cyan-100 outline-none transition"
                 />
               </div>
 
@@ -274,7 +274,7 @@ export default function ReportIssue() {
                   accept="image/*"
                   multiple
                   onChange={handleImageUpload}
-                  className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 shadow rounded-lg border-2 w-full"
+                  className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0  rounded-lg border-2 border-gray-300 w-full hover:border-cyan-200 focus:border-cyan-400 focus:ring-cyan-100 outline-none transition"
                 />
                 {images.length > 0 && (
                   <div className="flex gap-3 mt-3 flex-wrap">
@@ -313,7 +313,7 @@ export default function ReportIssue() {
                 name="description"
                 rows="5"
                 placeholder="Describe the issue in detail..."
-                className="w-full border-2 p-3 rounded-2xl input-glow hover:border-cyan-200 focus:border-cyan-400 focus:ring-cyan-100 outline-none transition"
+                className="w-full border-2 border-gray-300 p-3 rounded-lg input-glow hover:border-cyan-200 focus:border-cyan-400 focus:ring-cyan-100 outline-none transition"
               />
 
               <div>
@@ -332,7 +332,7 @@ export default function ReportIssue() {
                     type="button"
                     onClick={getCurrentLocation}
                     disabled={loadingGPS}
-                    className="absolute top-4 right-4 z-[1000] bg-white text-gray-800 px-4 py-2 rounded-xl shadow-md font-semibold hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 border border-gray-200 transition-all active:scale-95"
+                    className="absolute top-4 right-4 z-[1000] bg-white text-gray-800 px-4 py-2 rounded-xl shadow-md font-semibold hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 border-2  border-gray-200 transition-all active:scale-95 "
                   >
                     {loadingGPS ? (
                       <span className="animate-spin text-blue-600">⌛</span>
@@ -342,7 +342,7 @@ export default function ReportIssue() {
                     {loadingGPS ? 'Locating...' : 'Use My GPS'}
                   </button>
 
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] bg-black/75 text-white text-xs px-4 py-1.5 rounded-full pointer-events-none font-medium backdrop-blur-md">
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] bg-black/75 text-white text-xs px-4 py-1.5 rounded-full pointer-events-none border-2 border-gray-200 font-medium backdrop-blur-md">
                     Tap map to set location manually
                   </div>
                 </div>

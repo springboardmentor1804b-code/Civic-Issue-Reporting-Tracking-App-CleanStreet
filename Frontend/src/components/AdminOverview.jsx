@@ -1,4 +1,4 @@
-import {useState,useEffect,useMemo} from 'react'
+import { useState, useEffect, useMemo } from 'react';
 import {
   FaExclamationCircle,
   FaCheckCircle,
@@ -22,7 +22,7 @@ import {
   LineElement,
   Title,
 } from 'chart.js';
-import { Pie, Bar,Line } from 'react-chartjs-2';
+import { Pie, Bar, Line } from 'react-chartjs-2';
 
 ChartJS.register(
   ArcElement,
@@ -60,7 +60,6 @@ const AdminOverview = () => {
       },
     },
   };
-
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -130,17 +129,16 @@ const AdminOverview = () => {
 
   const ISSUE_TYPES = ['Garbage', 'Road Damage', 'Water Leakage', 'Street Light', 'Other'];
   const issueTypeBarData = useMemo(() => {
+    const counts = ISSUE_TYPES.reduce((acc, type) => {
+      acc[type] = 0;
+      return acc;
+    }, {});
 
-  const counts = ISSUE_TYPES.reduce((acc, type) => {
-    acc[type] = 0;
-    return acc;
-  }, {});
-
-  issues.forEach(issue => {
-    if (counts.hasOwnProperty(issue.issueType)) {
-      counts[issue.issueType]++;
-    }
-  });
+    issues.forEach(issue => {
+      if (counts.hasOwnProperty(issue.issueType)) {
+        counts[issue.issueType]++;
+      }
+    });
 
     return {
       labels: ISSUE_TYPES,
@@ -148,13 +146,7 @@ const AdminOverview = () => {
         {
           label: 'Number of Issues',
           data: ISSUE_TYPES.map(type => counts[type]),
-          backgroundColor: [
-            '#22c55e',
-            '#64748b',
-            '#38bdf8',
-            '#facc15',
-            '#f87171',
-          ],
+          backgroundColor: ['#22c55e', '#64748b', '#38bdf8', '#facc15', '#f87171'],
           borderRadius: 6,
         },
       ],
@@ -205,7 +197,6 @@ const AdminOverview = () => {
   const downloadReport = () => {
     window.open(`${BACKEND}/api/admin/reports/download-report`, '_blank');
   };
-
 
   return (
     <div>
@@ -268,6 +259,6 @@ const AdminOverview = () => {
       </div>
     </div>
   );
-}
+};
 
-export default AdminOverview
+export default AdminOverview;

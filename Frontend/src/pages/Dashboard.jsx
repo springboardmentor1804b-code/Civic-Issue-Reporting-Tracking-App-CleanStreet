@@ -32,6 +32,7 @@ function getActivityText(log, userRole, currentUserId) {
   const action = log.action || '';
   const lower = action.toLowerCase();
   const issueTitle = extractIssueTitle(action);
+  const isOwnAction = log.user_id && currentUserId && String(log.user_id) === String(currentUserId);
 
   const isOwn = log.user_id && currentUserId && String(log.user_id) === String(currentUserId);
 
@@ -39,47 +40,43 @@ function getActivityText(log, userRole, currentUserId) {
 
   if (userRole === 'User') {
     if (lower.includes('created issue') && issueTitle) {
-      return `You reported ${issueRef} "${issueTitle}"`;
+      return isOwnAction
+        ? `You reported "${issueTitle}"`
+        : `A new issue "${issueTitle}" was reported`;
     }
 
     if (lower.includes('deleted issue') && issueTitle) {
-      return `${issueRef} "${issueTitle}" was deleted`;
+      return isOwnAction
+        ? `Your Issue "${issueTitle}" was deleted`
+        : `Issue "${issueTitle}" was deleted`;
     }
 
     if (lower.includes('changed status') && issueTitle) {
-      return `Status updated for ${issueRef} "${issueTitle}"`;
+      return isOwnAction
+        ? `Status updated for your issue "${issueTitle}"`
+        : `Status updated for "${issueTitle}"`;
     }
-
-    if (issueTitle) {
-      return `Activity occurred on ${issueRef} "${issueTitle}"`;
-    }
+    return null;
   }
 
   if (userRole === 'Volunteer') {
     if (lower.includes('assigned issue') && issueTitle) {
-      return `You have been assigned ${issueRef} "${issueTitle}"`;
+      return isOwnAction ? `You were assigned "${issueTitle}"` : null;
     }
 
-    if (lower.includes('changed assignment') && issueTitle) {
-      return `Assignment changed for ${issueRef} "${issueTitle}"`;
+    if (lower.includes('declined issue') && issueTitle && isOwnAction) {
+      return `You declined "${issueTitle}"`;
     }
 
-    if (lower.includes('declined issue') && issueTitle) {
-      return `You declined ${issueRef} "${issueTitle}"`;
+    if (lower.includes('changed status') && issueTitle) {
+      return `Status updated for "${issueTitle}"`;
     }
 
-    if (lower.includes('changed role')) {
-      return 'Your role was changed by admin';
-    }
-
-    if (issueTitle) {
-      return `Update on ${issueRef} "${issueTitle}"`;
-    }
+    return null;
   }
 
   return action;
 }
-
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -216,16 +213,23 @@ export default function Dashboard() {
               <h3 className="text-xl font-bold mb-4">Recent Activity</h3>
 
               <div className="space-y-4 max-h-[360px] overflow-y-auto pr-2">
-                {activities.map(log => (
-                  <div key={log._id} className="bg-white rounded-xl px-6 py-4 shadow border-2 border-gray-400/50">
-                    <p className="font-medium leading-snug">
-                      {getActivityText(log, userRole, userId)}
-                    </p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {dayjs(log.timestamp || log.createdAt).fromNow()}
-                    </p>
-                  </div>
-                ))}
+                {activities.map(log => {
+                  const text = getActivityText(log, userRole, userId);
+                  if (!text) return null;
+                  return (
+                    <div
+                      key={log._id}
+                      className="bg-white rounded-xl px-6 py-4 shadow border-2 border-gray-400/50"
+                    >
+                      <p className="font-medium leading-snug">
+                        {getActivityText(log, userRole, userId)}
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {dayjs(log.timestamp || log.createdAt).fromNow()}
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -239,12 +243,11 @@ export default function Dashboard() {
                   <FaPlusCircle /> Report Issue
                 </button>
 
-                <button className="w-full py-3 bg-blue-300 rounded-xl font-semibold flex justify-center gap-2">
+                <button
+                  onClick={() => navigate('/community-report')}
+                  className="w-full py-3 bg-blue-300 rounded-xl font-semibold flex justify-center gap-2"
+                >
                   <FaListUl /> View Issues
-                </button>
-
-                <button className="w-full py-3 bg-teal-400 rounded-xl font-semibold flex justify-center gap-2">
-                  <FaMapMarkedAlt /> Issue Map
                 </button>
               </div>
             </div>

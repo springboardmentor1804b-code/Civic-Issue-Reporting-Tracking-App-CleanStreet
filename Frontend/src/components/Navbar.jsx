@@ -2,6 +2,7 @@
 import { useState,React } from 'react';
 import { Link, useNavigate } from "react-router-dom";
 import { NavLink } from 'react-router-dom';
+import { FaUserCircle } from 'react-icons/fa';
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -47,14 +48,22 @@ export default function Navbar() {
 
           <div
             onClick={() => navigate('/profile')}
-            className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center cursor-pointer"
+            className="w-9 h-9 rounded-full cursor-pointer overflow-hidden flex items-center justify-center bg-gray-100"
             title="Profile"
           >
-            👤
-          </div>
-
-          <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center">
-            🔔
+            {user?.image ? (
+              <img
+                src={user.image}
+                alt="Profile"
+                className="w-full h-full object-cover"
+                onError={e => {
+                  e.target.onerror = null;
+                  e.target.src = '';
+                }}
+              />
+            ) : (
+              <FaUserCircle className="text-gray-500 text-3xl" />
+            )}
           </div>
         </div>
       </div>

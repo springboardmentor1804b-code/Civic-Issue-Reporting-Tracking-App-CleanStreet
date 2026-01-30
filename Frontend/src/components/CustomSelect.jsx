@@ -2,9 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
 
 const priorityColors = {
-  Low: 'text-blue-700',
-  Medium: 'text-cyan-700',
-  High: 'text-blue-900',
+  Low: 'text-green-700',
+  Medium: 'text-yellow-700',
+  High: 'text-red-900',
 };
 
 export default function CustomSelect({ label, value, onChange, options }) {

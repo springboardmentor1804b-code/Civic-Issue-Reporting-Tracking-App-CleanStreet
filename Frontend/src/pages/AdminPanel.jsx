@@ -4,14 +4,14 @@ import Footer from '../components/Footer';
 import Navbar from '../components/Navbar';
 
 const AdminPanel = () => {
-  
+
 
   return (
     <>
       <AuroraBackground />
       <div className="min-h-screen relative ">
         <Navbar />
-        <div className="container mx-auto px-4 sm:px-6 lg:px-20 pt-6 pb-12">
+        <div className="p-6 mx-auto px-4 sm:px-6 lg:px-20 pt-6 pb-12">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div className="flex flex-col gap-2">
               <h1 className="text-3xl sm:text-4xl font-extrabold">Admin Dashboard</h1>
