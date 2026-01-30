@@ -313,7 +313,6 @@ setEditing(false);
       <div className="min-h-screen relative">
         <Navbar />
         <div className="max-w-6xl mx-auto px-4 py-10">
-
           <div className="bg-white rounded-xl shadow-md p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
             <div className="flex items-start gap-6">
               <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-4xl">
@@ -381,7 +380,6 @@ setEditing(false);
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-
             <div className="bg-white rounded-xl shadow-md p-6">
               <h3 className="text-2xl font-bold mb-6">Account Information</h3>
 
@@ -563,7 +561,7 @@ setEditing(false);
                         type="password"
                         value={pwForm.currentPassword}
                         onChange={handlePwChange}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border-2 border-gray-300 rounded px-3 py-2 "
                       />
                     </div>
                     <div>
@@ -573,7 +571,7 @@ setEditing(false);
                         type="password"
                         value={pwForm.newPassword}
                         onChange={handlePwChange}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border-2 border-gray-300 rounded px-3 py-2"
                       />
                     </div>
                     <div>
@@ -583,7 +581,7 @@ setEditing(false);
                         type="password"
                         value={pwForm.confirmPassword}
                         onChange={handlePwChange}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border-2 border-gray-300 rounded px-3 py-2"
                       />
                     </div>
 
@@ -600,7 +598,7 @@ setEditing(false);
                           resetPwForm();
                           setPwOpen(false);
                         }}
-                        className="px-4 py-2 border rounded"
+                        className="px-4 py-2 border-2 border-gray-300 rounded"
                       >
                         Cancel
                       </button>
@@ -609,18 +607,10 @@ setEditing(false);
                 </div>
               )}
 
-              <div className="bg-green-50 p-4 rounded-lg mb-6 flex items-center justify-between">
-                <div>
-                  <p className="font-semibold">Privacy Settings</p>
-                  <p className="text-gray-600 text-sm">Manage who can see your profile</p>
-                </div>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-full">Manage</button>
-              </div>
-
               <div className="flex gap-4">
                 <button
                   onClick={handleLogout}
-                  className="flex-1 px-4 py-2 bg-cyan-300 rounded shadow rounded"
+                  className="flex-1 px-4 py-2 bg-cyan-300 rounded shadow "
                 >
                   Logout
                 </button>
