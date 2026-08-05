@@ -125,7 +125,7 @@ const AdminComplaintsPage = () => {
 
                 {/* Type */}
                 <td className="px-4 py-3">
-                  {c.category || "—"}
+                  {c.issueType || "—"}
                 </td>
 
                 {/* Status */}

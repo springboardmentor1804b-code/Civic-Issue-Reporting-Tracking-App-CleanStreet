@@ -330,7 +330,7 @@ const fetchRecentComplaints = async () => {
     </button>
 
     {showExport && (
-      <div className="absolute top-full right-0 mt-2 bg-white border rounded shadow-md z-30">
+      <div className="absolute top-full right-0 mt-1 bg-white border rounded shadow-md z-30">
         <button
           onClick={() => exportComplaints("pdf", filters)}
           className="block px-4 py-2 hover:bg-gray-100 w-full text-left text-sm"
